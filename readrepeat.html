@@ -164,9 +164,10 @@
         <p class="small" style="margin:0;">选择 <strong>再听一遍</strong> 来重复系统朗读；选择 <strong>跟读</strong> 进入语音输入模式，我们将把你的发音转成文字并与原句对比。</p>
       </div>
       <div class="actions">
-        <button class="btn secondary" id="cancelModal">取消</button>
-        <button class="btn warn" id="listenAgainBtn">再听一遍</button>
-        <button class="btn success" id="shadowBtn">跟读</button>
+    <button class="btn secondary" id="cancelModal">取消</button>
+    <button class="btn warn" id="listenAgainBtn">再听一遍</button>
+    <button class="btn success" id="shadowBtn">跟读</button>
+    <button class="btn" id="nextBtn">进行下一个</button>
       </div>
     </div>
   </div>
@@ -356,10 +357,19 @@
     const mmListenAgain = qs('#mmListenAgain');
     const mmReadAgain = qs('#mmReadAgain');
 
+    // 新增“进行下一个”按钮
+    const nextBtn = qs('#nextBtn');
+
     function openModal(el){ el.style.display = 'flex'; el.focus(); }
     function closeModal(el){ el.style.display = 'none'; }
 
     cancelModal.addEventListener('click', ()=> closeModal(choiceModal));
+
+      // “进行下一个”按钮事件
+      nextBtn.addEventListener('click', async () => {
+        closeModal(choiceModal);
+        await nextSentence();
+      });
 
     // ---------- Main flow ----------
     async function startFlow(){
