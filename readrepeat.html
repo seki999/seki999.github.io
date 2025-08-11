@@ -336,7 +336,77 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
     }
 
     // ---------- App State ----------
-    const inputText = qs('#inputText');
+  const inputText = qs('#inputText');
+  // 单词对照弹窗
+  let wordCompareModal = null;
+  let wordCompareContent = null;
+  let wordCompareListenBtn = null;
+  let wordCompareShadowBtn = null;
+  let wordCompareResult = null;
+    // 创建单词对照弹窗
+    function createWordCompareModal() {
+      if (wordCompareModal) return;
+      wordCompareModal = document.createElement('div');
+      wordCompareModal.className = 'modal-backdrop';
+      wordCompareModal.style.display = 'none';
+      wordCompareModal.innerHTML = `
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wordCompareTitle">
+          <header><h3 id="wordCompareTitle">单词对照练习</h3></header>
+          <div class="content">
+            <div id="wordCompareContent" style="font-size:20px;font-weight:600;margin-bottom:10px;"></div>
+            <div class="row" style="gap:10px;margin-bottom:10px;">
+              <button class="btn secondary" id="wordCompareListenBtn">朗读</button>
+              <button class="btn success" id="wordCompareShadowBtn">我来读</button>
+            </div>
+            <textarea id="wordCompareResult" placeholder="你的识别结果" readonly style="min-height:40px;"></textarea>
+          </div>
+          <div class="actions"><button class="btn secondary" id="wordCompareClose">关闭</button></div>
+        </div>
+      `;
+      document.body.appendChild(wordCompareModal);
+      wordCompareContent = wordCompareModal.querySelector('#wordCompareContent');
+      wordCompareListenBtn = wordCompareModal.querySelector('#wordCompareListenBtn');
+      wordCompareShadowBtn = wordCompareModal.querySelector('#wordCompareShadowBtn');
+      wordCompareResult = wordCompareModal.querySelector('#wordCompareResult');
+      wordCompareModal.querySelector('#wordCompareClose').onclick = () => { wordCompareModal.style.display = 'none'; };
+    }
+    // 朗读选中单词
+    async function speakSelectedWord(word) {
+      // 临时设置朗读速率为当前主设置
+      const prevRate = speakRate;
+      speakRate = parseFloat(document.getElementById('rateRange').value) || 0.75;
+      await speakSentence(word);
+      speakRate = prevRate;
+    }
+
+    // 跟读并识别单词
+    async function shadowSelectedWord(word) {
+      try {
+        const heard = await listenOnce();
+        wordCompareResult.value = heard;
+        if (normalize(heard) === normalize(word)) {
+          await speakFeedback('Good!');
+        } else {
+          await speakFeedback('Try again.');
+        }
+      } catch (e) {
+        wordCompareResult.value = '识别失败';
+      }
+    }
+    // 监听输入区选中单词
+    inputText.addEventListener('mouseup', () => {
+      setTimeout(() => {
+        const sel = inputText.value.substring(inputText.selectionStart, inputText.selectionEnd).trim();
+        if (sel && sel.split(/\s+/).length === 1 && /^[a-zA-Z'-]+$/.test(sel)) {
+          createWordCompareModal();
+          wordCompareContent.textContent = sel;
+          wordCompareResult.value = '';
+          wordCompareModal.style.display = 'flex';
+          wordCompareListenBtn.onclick = () => speakSelectedWord(sel);
+          wordCompareShadowBtn.onclick = () => shadowSelectedWord(sel);
+        }
+      }, 10);
+    });
     const currentSentenceEl = qs('#currentSentence');
     const recognizedTextEl = qs('#recognizedText');
     const progressEl = qs('#progress');
