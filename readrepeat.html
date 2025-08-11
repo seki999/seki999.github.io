@@ -123,7 +123,7 @@
             <select id="voiceSelect"></select>
               <div style="margin-top:10px;">
                 <label class="small" for="rateRange">朗读速度：<span id="rateValue">1.0</span></label>
-                <input type="range" id="rateRange" min="0.5" max="2" step="0.05" value="1" style="width:100%;">
+                <input type="range" id="rateRange" min="0.5" max="2" step="0.05" value="0.75" style="width:100%;">
               </div>
             <div class="row" style="margin-top:10px;">
               <button class="btn" id="startBtn">开始</button>
@@ -188,6 +188,7 @@
       </div>
       <div id="mmDiffWords" style="margin:10px 0 0 0;"></div>
       <div class="actions">
+        <button class="btn secondary" id="mmCancel">取消</button>
         <button class="btn warn" id="mmListenAgain">再听一遍</button>
         <button class="btn success" id="mmReadAgain">我再读一遍</button>
       </div>
@@ -261,7 +262,7 @@
 
     let utter; // 当前 utterance
     let selectedVoiceURI = '';
-    let speakRate = 1.0;
+    let speakRate = 0.75;
 
     function speakSentence(text) {
       return new Promise((resolve, reject) => {
@@ -288,7 +289,8 @@ rateRange.addEventListener('input', () => {
   speakRate = parseFloat(rateRange.value);
   rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 });
-// 初始化显示
+// 初始化滑块和显示
+rateRange.value = speakRate;
 rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 
     function cancelSpeak(){ try { synth.cancel(); } catch(e){} }
@@ -372,6 +374,9 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
   const mmListenAgain = qs('#mmListenAgain');
   const mmReadAgain = qs('#mmReadAgain');
   const mmDiffWords = qs('#mmDiffWords');
+  const mmCancel = qs('#mmCancel');
+  // “和原句不一致”弹窗的取消按钮
+  mmCancel.addEventListener('click', ()=> closeModal(mismatchModal));
 
     // 新增“进行下一个”按钮
     const nextBtn = qs('#nextBtn');
@@ -449,7 +454,10 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
       mmDiffWords.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', e => {
           const w = btn.getAttribute('data-word');
-          speakSentence(w);
+          // 临时设置朗读速率为当前主设置
+          const prevRate = speakRate;
+          speakRate = parseFloat(document.getElementById('rateRange').value) || 0.75;
+          speakSentence(w).finally(() => { speakRate = prevRate; });
         });
       });
     }
