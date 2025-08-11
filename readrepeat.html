@@ -186,6 +186,7 @@
         <p style="margin:0 0 10px 0;">你的识别：</p>
         <div class="current" id="mmRecognized"></div>
       </div>
+      <div id="mmDiffWords" style="margin:10px 0 0 0;"></div>
       <div class="actions">
         <button class="btn warn" id="mmListenAgain">再听一遍</button>
         <button class="btn success" id="mmReadAgain">我再读一遍</button>
@@ -368,8 +369,9 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
     const mismatchModal = qs('#mismatchModal');
     const mmOriginal = qs('#mmOriginal');
     const mmRecognized = qs('#mmRecognized');
-    const mmListenAgain = qs('#mmListenAgain');
-    const mmReadAgain = qs('#mmReadAgain');
+  const mmListenAgain = qs('#mmListenAgain');
+  const mmReadAgain = qs('#mmReadAgain');
+  const mmDiffWords = qs('#mmDiffWords');
 
     // 新增“进行下一个”按钮
     const nextBtn = qs('#nextBtn');
@@ -416,6 +418,42 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
       openModal(choiceModal);
     }
 
+    // 计算不一致单词并渲染
+    function showDiffWords(original, recognized) {
+      mmDiffWords.innerHTML = '';
+      const origArr = normalize(original).split(' ');
+      const recArr = normalize(recognized).split(' ');
+      // 找出不同的单词，分组
+      const origDiff = [];
+      const recDiff = [];
+      for (let i = 0; i < Math.max(origArr.length, recArr.length); i++) {
+        if (origArr[i] !== recArr[i]) {
+          if (origArr[i]) origDiff.push(origArr[i]);
+          if (recArr[i]) recDiff.push(recArr[i]);
+        }
+      }
+      if (origDiff.length === 0 && recDiff.length === 0) return;
+      let html = '<div class="small" style="margin-bottom:4px;">不一致的单词：</div>';
+      html += '<div style="margin-bottom:2px;">';
+      origDiff.forEach(w => {
+        html += `<button class=\"btn secondary\" style=\"margin:2px; padding:4px 10px; font-size:14px;\" data-word=\"${w}\">${w}</button>`;
+      });
+      html += '</div>';
+      html += '<div style="margin-bottom:2px;">';
+      recDiff.forEach(w => {
+        html += `<button class=\"btn warn\" style=\"margin:2px; padding:4px 10px; font-size:14px;\" data-word=\"${w}\">${w}</button>`;
+      });
+      html += '</div>';
+      mmDiffWords.innerHTML = html;
+      // 按钮朗读
+      mmDiffWords.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', e => {
+          const w = btn.getAttribute('data-word');
+          speakSentence(w);
+        });
+      });
+    }
+
     async function handleShadowing(){
       closeModal(choiceModal);
       try {
@@ -423,12 +461,14 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
         recognizedTextEl.value = heard;
         const same = normalize(heard) === normalize(lines[idx]);
         if (same) {
+          mmDiffWords.innerHTML = '';
           await speakFeedback('Great! Moving to the next sentence.');
           await nextSentence();
         } else {
           // 不一致，弹出处理对话框
           mmOriginal.textContent = lines[idx];
           mmRecognized.textContent = heard || '（空结果）';
+          showDiffWords(lines[idx], heard);
           openModal(mismatchModal);
         }
       } catch (e) {
@@ -455,12 +495,14 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
         recognizedTextEl.value = heard;
         const same = normalize(heard) === normalize(lines[idx]);
         if (same) {
+          mmDiffWords.innerHTML = '';
           await speakFeedback('Nice! Next sentence.');
           await nextSentence();
         } else {
           // 仍不一致，继续让用户选择
           mmOriginal.textContent = lines[idx];
           mmRecognized.textContent = heard || '（空结果）';
+          showDiffWords(lines[idx], heard);
           openModal(mismatchModal);
         }
       } catch (e) {
