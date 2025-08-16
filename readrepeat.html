@@ -209,6 +209,7 @@
 
     const normalize = (s) => (s||'')
       .toLowerCase()
+      .replace(/[’‘`＇]/g, "'") // 所有撇号（包括全角）统一为半角'
       .replace(/[^a-z'\s]/g, ' ') // 保留英文和撇号
       .replace(/\s+/g, ' ')
       .trim();
