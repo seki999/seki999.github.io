@@ -191,6 +191,7 @@
         <button class="btn secondary" id="mmCancel">取消</button>
         <button class="btn warn" id="mmListenAgain">再听一遍</button>
         <button class="btn success" id="mmReadAgain">我再读一遍</button>
+        <button class="btn" id="mmNextBtn">下一句</button>
       </div>
     </div>
   </div>
@@ -454,6 +455,7 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
   const mmReadAgain = qs('#mmReadAgain');
   const mmDiffWords = qs('#mmDiffWords');
   const mmCancel = qs('#mmCancel');
+  const mmNextBtn = document.getElementById('mmNextBtn');
   // “和原句不一致”弹窗的取消按钮
   mmCancel.addEventListener('click', ()=> closeModal(mismatchModal));
 
