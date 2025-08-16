@@ -317,11 +317,18 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
         if (!recognition) {
           return reject(new Error('此浏览器暂不支持语音识别（SpeechRecognition）。'));
         }
+        recognition.continuous = true; // 持续识别
         setStatus('listening', '正在听你读…');
+        let resultReceived = false;
         recognition.onresult = (ev) => {
+          resultReceived = true;
           const text = ev.results[0][0].transcript || '';
           setStatus('idle', '识别完成');
-          resolve(text);
+          // 延迟 2 秒后自动结束识别
+          setTimeout(() => {
+            recognition.stop();
+            resolve(text);
+          }, 2000);
         };
         recognition.onerror = (e) => {
           setStatus('idle', '识别出错');
@@ -329,7 +336,7 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
         };
         recognition.onend = () => {
           // 若未触发 result，仍要回到 idle
-          if (statusText.textContent.includes('听你读')) setStatus('idle', '识别结束');
+          if (!resultReceived) setStatus('idle', '识别结束');
         };
         try { recognition.start(); } catch (e) { reject(e); }
       });
