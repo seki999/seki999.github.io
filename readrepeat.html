@@ -304,7 +304,9 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
     function initRecognition(){
       if (!SpeechRecognition) return null;
       const rec = new SpeechRecognition();
-      rec.lang = 'en-US';
+      // 语音识别语言与朗读语音一致
+      const selectedVoice = voices.find(v => v.voiceURI === voiceSelect.value);
+      rec.lang = selectedVoice ? selectedVoice.lang : 'en-US';
       rec.interimResults = false;
       rec.continuous = false;
       rec.maxAlternatives = 1;
