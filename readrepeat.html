@@ -327,11 +327,11 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
           resultReceived = true;
           const text = ev.results[0][0].transcript || '';
           setStatus('idle', '识别完成');
-          // 延迟 2 秒后自动结束识别
+          // 延迟 5 秒后自动结束识别
           setTimeout(() => {
             recognition.stop();
             resolve(text);
-          }, 2000);
+          }, 5000);
         };
         recognition.onerror = (e) => {
           setStatus('idle', '识别出错');
