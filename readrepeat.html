@@ -536,9 +536,9 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
       mmDiffWords.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', e => {
           const w = btn.getAttribute('data-word');
-          // 临时设置朗读速率为当前主设置
+          // 临时设置朗读速率为 0.7
           const prevRate = speakRate;
-          speakRate = parseFloat(document.getElementById('rateRange').value) || 0.75;
+          speakRate = 0.7;
           speakSentence(w).finally(() => { speakRate = prevRate; });
         });
       });
