@@ -559,8 +559,15 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
         const same = normalize(heard) === normalize(lines[idx]);
         if (same) {
           mmDiffWords.innerHTML = '';
-          await speakFeedback('Great! Moving to the next sentence.');
-          await nextSentence();
+          if (idx >= lines.length - 1) {
+            // 最后一句，给出完成提示
+            await speakFeedback('Congratulations! All sentences completed.');
+            setCurrentSentence('全部完成 🎉');
+            running = false;
+          } else {
+            await speakFeedback('Great! Moving to the next sentence.');
+            await nextSentence();
+          }
         } else {
           // 不一致，弹出处理对话框
           mmOriginal.textContent = lines[idx];
