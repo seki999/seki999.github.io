@@ -456,12 +456,13 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
   const mmReadAgain = qs('#mmReadAgain');
   const mmDiffWords = qs('#mmDiffWords');
   const mmCancel = qs('#mmCancel');
-  const mmNextBtn = document.getElementById('mmNextBtn');
+
   // “和原句不一致”弹窗的取消按钮
   mmCancel.addEventListener('click', ()=> closeModal(mismatchModal));
 
     // 新增“进行下一个”按钮
     const nextBtn = qs('#nextBtn');
+    const mmNextBtn = qs('#mmNextBtn');
 
     function openModal(el){ el.style.display = 'flex'; el.focus(); }
     function closeModal(el){ el.style.display = 'none'; }
@@ -474,7 +475,13 @@ rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '
         await nextSentence();
       });
 
-    // ---------- Main flow ----------
+      // “进行下一个”按钮事件
+      mmNextBtn.addEventListener('click', async () => {
+        closeModal(choiceModal);
+        await nextSentence();
+      });
+
+      // ---------- Main flow ----------
     async function startFlow(){
       loadLines();
       if (!lines.length) { alert('请先粘贴英文句子（每行一句）'); return; }
