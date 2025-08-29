@@ -39,10 +39,34 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:#b5c5dd;border-radius:6px;}
 ::-webkit-scrollbar-thumb:hover{background:#94aac7;}
+
+.rate-control-topright {
+  position: absolute;
+  top: 24px;
+  right: 36px;
+  z-index: 10;
+  background: #fff7e0;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  padding: 0.7em 1.2em;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: 1.08em;
+}
+@media (max-width: 900px) {
+  .rate-control-topright { right: 8px; top: 8px; font-size: 1em; }
+}
 </style>
 </head>
 <body>
   <div class="app-container">
+    <!-- 语速调节控件 -->
+    <div class="rate-control-topright" style="position:absolute;top:24px;right:36px;">
+      <label for="rateRange">朗读速度：</label>
+      <input type="range" id="rateRange" min="0.5" max="2" step="0.01" value="0.75" style="width:120px;">
+      <span id="rateValue">0.75</span>
+    </div>
     <header>
       <h1>文本转语音应用</h1>
       <div class="footer-hint">提示：生成语音并下载 时请选择“此标签页”并勾选“分享此标签页音频 / Share tab audio”。某些浏览器可能无法录制合成语音。</div>
@@ -108,6 +132,16 @@ const btnSpeakDownload = document.getElementById('btnSpeakDownload');
 const btnCancel = document.getElementById('btnCancel');
 const linesPreview = document.getElementById('linesPreview');
 const errorBox = document.getElementById('errorBox');
+const rateRange = document.getElementById('rateRange');
+const rateValue = document.getElementById('rateValue');
+let speakRate = 1; // 默认为1
+
+rateRange.addEventListener('input', () => {
+  speakRate = parseFloat(rateRange.value);
+  rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+});
+rateRange.value = speakRate;
+rateValue.textContent = speakRate.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 
 const synth = window.speechSynthesis;
 let voices = [];
@@ -351,6 +385,7 @@ function speakLine(text, voice){
     try { synth.cancel(); } catch(e){}
     const u = new SpeechSynthesisUtterance(text);
     if(voice) u.voice = voice;
+    u.rate = speakRate; // 朗读速度
     u.onend = ()=> resolve();
     u.onerror = (e)=> reject(e);
     synth.speak(u);
