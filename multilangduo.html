@@ -64,8 +64,11 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
     <!-- 语速调节控件 -->
     <div class="rate-control-topright" style="position:absolute;top:24px;right:36px;">
       <label for="rateRange">朗读速度：</label>
-      <input type="range" id="rateRange" min="0.5" max="2" step="0.01" value="0.75" style="width:120px;">
-      <span id="rateValue">0.75</span>
+      <input type="range" id="rateRange" min="0.5" max="2" step="0.01" value="1" style="width:120px;">
+      <span id="rateValue">1</span>
+      <button id="rateResetBtn" type="button" style="margin-left:8px;padding:0.3em 0.9em;border-radius:6px;border:none;background:#ffe082;color:#3E3E3E;font-weight:600;cursor:pointer;">恢复为1</button>
+      <!-- 新增：恢复为0.75 按钮 -->
+      <button id="rateSet075Btn" type="button" style="margin-left:8px;padding:0.3em 0.9em;border-radius:6px;border:none;background:#ffe082;color:#3E3E3E;font-weight:600;cursor:pointer;">设为0.75</button>
     </div>
     <header>
       <h1>文本转语音应用</h1>
@@ -570,5 +573,19 @@ btnSpeakDownload.addEventListener('click', speakAndDownload);
 
 /* 页面初始 */
 renderPreview();
+
+const rateResetBtn = document.getElementById('rateResetBtn');
+rateResetBtn.addEventListener('click', () => {
+  speakRate = 1;
+  rateRange.value = '1';
+  rateValue.textContent = '1';
+});
+
+const rateSet075Btn = document.getElementById('rateSet075Btn');
+rateSet075Btn.addEventListener('click', () => {
+  speakRate = 0.75;
+  rateRange.value = '0.75';
+  rateValue.textContent = '0.75';
+});
 </script>
 </body>
