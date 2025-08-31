@@ -200,17 +200,11 @@ function updateActiveLine(idx){
   currentLineIndex = idx;
   const children = Array.from(linesPreview.children);
   children.forEach((el,i)=> el.classList.toggle('active', i === idx));
-  // 若出现滚动条，确保当前行可见
-  if(idx >= 0 && linesPreview.style.overflow === 'auto'){
+  // 保证当前行始终居中显示
+  if(idx >= 0){
     const activeEl = children[idx];
     if(activeEl){
-      const previewRect = linesPreview.getBoundingClientRect();
-      const elRect = activeEl.getBoundingClientRect();
-      if(elRect.top < previewRect.top){
-        activeEl.scrollIntoView({block:'start'});
-      }else if(elRect.bottom > previewRect.bottom){
-        activeEl.scrollIntoView({block:'end'});
-      }
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 }
