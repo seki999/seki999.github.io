@@ -296,8 +296,8 @@ let speaker1DefaultApplied = false; // 当前通过排序已是 Xiaoxiao，可�
 let speaker2DefaultApplied = false;
 
 /* 新增：英语默认语音设置 */
-const defaultEnglishVoiceName = 'Microsoft EmmaMultilingual Online (Natural) - English (United States)';
-const defaultSpeaker5EnglishVoiceName = 'Microsoft EmmaMultilingual Online (Natural) - English (United States)';
+const defaultEnglishVoiceName = 'Microsoft Christopher Online (Natural) - English (United States)';
+const defaultSpeaker5EnglishVoiceName = 'Microsoft Emma Online (Natural) - English (United States)';
 const defaultSpeaker6EnglishVoiceName = 'Microsoft Christopher Online (Natural) - English (United States)';
 let speaker1EnglishDefaultApplied = false;
 let speaker2EnglishDefaultApplied = false;
@@ -368,6 +368,8 @@ function populateVoiceSelect(selectEl, langPrefix){
     if (!lang.startsWith(lp)) return false;
 
     if (lp === 'en') {
+      // 新增：屏蔽 EmmaMultilingual 语音
+      if (v.name === 'Microsoft EmmaMultilingual Online (Natural) - English (United States)') return false;
       if (!allowedEnRegions.some(r => lang.startsWith(r))) return false;
     } else if (lp === 'zh') {
       if (lang.includes('hk')) return false;
@@ -433,7 +435,7 @@ function applyEnglishDefault(selectEl, which){
   const opts = Array.from(selectEl.options);
   let target = opts.find(o => o.text.startsWith(defaultEnglishVoiceName));
   if(!target){
-    target = opts.find(o => /EmmaMultilingual/i.test(o.text) && /English \(United States\)/i.test(o.text));
+    target = opts.find(o => /Christopher Online/i.test(o.text) && /English \(United States\)/i.test(o.text));
   }
   if(target){
     selectEl.value = target.value;
@@ -441,7 +443,7 @@ function applyEnglishDefault(selectEl, which){
     else speaker2EnglishDefaultApplied = true;
     console.log(`[${which}] 英语默认已设为: ${target.text}`);
   } else {
-    console.log(`[${which}] 未找到默认 EmmaMultilingual 英语语音，保持当前第一项。`);
+    console.log(`[${which}] 未找到默认 Christopher Online 英语语音，保持当前第一项。`);
   }
 }
 
@@ -451,12 +453,14 @@ function applySpeaker5EnglishDefaultIfNeeded(){
   if (speaker5LangEl.value !== 'en') return;
   const opts = Array.from(speaker5VoiceEl.options);
   if(!opts.length) return;
-  let target = opts.find(o=>o.text.startsWith(defaultSpeaker5EnglishVoiceName));
-  if(!target) target = opts.find(o=>/EmmaMultilingual/i.test(o.text));
+  let target = opts.find(o => o.text.startsWith(defaultSpeaker5EnglishVoiceName));
+  if(!target) target = opts.find(o => /Emma Online/i.test(o.text));
   if(target){
     speaker5VoiceEl.value = target.value;
     speaker5EnglishDefaultApplied = true;
     console.log('[Speaker5] 英语默认已设为:', target.text);
+  } else {
+    console.log('[Speaker5] 未找到 Emma，等待 voiceschanged。');
   }
 }
 
