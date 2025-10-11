@@ -165,7 +165,11 @@ let speaker1EnglishDefaultApplied = false;
 let speaker2EnglishDefaultApplied = false;
 
 /* 初始文本示例 */
-textEl.value = ``;
+textEl.value = `Speaker 1: 大家好，我们来测试一下静音功能。
+[pause:2]
+Speaker 2: 好的，现在是我在说话，中间暂停了两秒。
+[静音:3.5]
+Speaker 1: 这次暂停了3.5秒，测试结束。`;
 
 /* 工具函数 */
 function setError(msg){ errorBox.textContent = msg || ''; }
@@ -409,6 +413,16 @@ function parseLine(raw){
   return { utterText, voice };
 }
 
+/* 实现一个异步的暂停函数 */
+function sleep(seconds) {
+  return new Promise(resolve => {
+    if (cancelRequested) return resolve(); // 如果已取消，立即结束
+    const timer = setTimeout(resolve, seconds * 1000);
+    // 允许取消操作中断暂停
+    btnCancel.addEventListener('click', () => clearTimeout(timer), { once: true });
+  });
+}
+
 /* 纯朗读（不录音） */
 async function readAloud(){
   if(synth.speaking) synth.cancel();
@@ -426,15 +440,22 @@ async function readAloud(){
   for(let i=0;i<lines.length;i++){
     if(cancelRequested) break;
     updateActiveLine(i);
-    const { utterText, voice } = parseLine(lines[i]);
-    if(!voice){ setError('未找到语音。'); break; }
-    btnCancel.disabled = false;
-    try{
-      await speakLine(utterText, voice);
-    }catch(e){
-      console.error(e);
-      setError('朗读出错。');
-      break;
+    const currentLine = lines[i];
+    const pauseMatch = currentLine.trim().match(/^\[(pause|静音):(\d+(\.\d+)?)\]$/i);
+
+    if (pauseMatch) {
+      const duration = parseFloat(pauseMatch[2]);
+      btnCancel.disabled = false;
+      await sleep(duration);
+    } else {
+      const { utterText, voice } = parseLine(currentLine);
+      if(!voice){ setError('未找到语音。'); break; }
+      btnCancel.disabled = false;
+      try{
+        await speakLine(utterText, voice);
+      }catch(e){
+        console.error(e); setError('朗读出错。'); break;
+      }
     }
   }
   synth.cancel();
@@ -528,14 +549,20 @@ async function speakAndDownload(){
   for(let i=0;i<lines.length;i++){
     if(cancelRequested) break;
     updateActiveLine(i);
-    const { utterText, voice } = parseLine(lines[i]);
-    if(!voice){ setError('未找到语音。'); break; }
-    try{
-      await speakLine(utterText, voice);
-    }catch(e){
-      console.error(e);
-      setError('朗读出错。');
-      break;
+    const currentLine = lines[i];
+    const pauseMatch = currentLine.trim().match(/^\[(pause|静音):(\d+(\.\d+)?)\]$/i);
+
+    if (pauseMatch) {
+      const duration = parseFloat(pauseMatch[2]);
+      await sleep(duration);
+    } else {
+      const { utterText, voice } = parseLine(currentLine);
+      if(!voice){ setError('未找到语音。'); break; }
+      try{
+        await speakLine(utterText, voice);
+      }catch(e){
+        console.error(e); setError('朗读出错。'); break;
+      }
     }
   }
   synth.cancel();
