@@ -57,6 +57,26 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
 @media (max-width: 900px) {
   .rate-control-topright { right: 8px; top: 8px; font-size: 1em; }
 }
+
+/* 确认弹窗样式 */
+.modal-backdrop {
+  position: fixed; /* 固定定位，不随页面滚动 */
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: none; /* 默认隐藏 */
+  align-items: center; /* 垂直居中 */
+  justify-content: center; /* 水平居中 */
+  z-index: 50;
+}
+.modal-dialog {
+  background: #fff; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  width: min(480px, 90vw); overflow: hidden;
+}
+.modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; }
+.modal-header h3 { margin:0; font-size: 1.2rem; }
+.modal-content { padding: 1.5rem; }
+.modal-actions { display:flex; gap:1rem; justify-content:flex-end; padding: 1rem 1.5rem; }
+.modal-actions .secondary { background: #757575; }
 </style>
 </head>
 <body>
@@ -122,8 +142,23 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
 
     <div id="errorBox" class="error-message"></div>
   </div>
+  <!-- 确认弹窗 -->
+  <div class="modal-backdrop" id="confirmModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>等待确认</h3>
+      </div>
+      <div class="modal-content">
+        <p>朗读已暂停，请选择下一步操作。</p>
+      </div>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" class="action-button secondary">停止朗读</button>
+        <button id="confirmContinueBtn" class="action-button">继续朗读</button>
+      </div>
+    </div>
+  </div>
 
-<script>
+  <script>
 /* 状态 */
 const textEl = document.getElementById('textInput');
 const speaker1LangEl = document.getElementById('speaker1Lang');
@@ -166,10 +201,12 @@ let speaker2EnglishDefaultApplied = false;
 
 /* 初始文本示例 */
 textEl.value = `Speaker 1: 大家好，我们来测试一下静音功能。
-[pause:2]
-Speaker 2: 好的，现在是我在说话，中间暂停了两秒。
-[静音:3.5]
-Speaker 1: 这次暂停了3.5秒，测试结束。`;
+[pause:1.5]
+Speaker 2: 接下来会弹出一个确认框。
+[confirm]
+Speaker 1: 你好，你刚才点击了继续。
+[确认]
+Speaker 2: 测试结束。`;
 
 /* 工具函数 */
 function setError(msg){ errorBox.textContent = msg || ''; }
@@ -440,10 +477,17 @@ async function readAloud(){
   for(let i=0;i<lines.length;i++){
     if(cancelRequested) break;
     updateActiveLine(i);
-    const currentLine = lines[i];
-    const pauseMatch = currentLine.trim().match(/^\[(pause|静音):(\d+(\.\d+)?)\]$/i);
+    const currentLine = lines[i].trim();
+    const pauseMatch = currentLine.match(/\[(pause|静音):(\d+(\.\d+)?)\]/i);
+    const confirmMatch = currentLine.match(/^\[(confirm|确认)\]$/i);
 
-    if (pauseMatch) {
+    if (confirmMatch) {
+      const shouldContinue = await showConfirmModal();
+      if (!shouldContinue) {
+        cancelRequested = true;
+        setError('已取消。');
+      }
+    } else if (pauseMatch && (currentLine.startsWith('[') || currentLine.includes(':[') )) {
       const duration = parseFloat(pauseMatch[2]);
       btnCancel.disabled = false;
       await sleep(duration);
@@ -549,10 +593,17 @@ async function speakAndDownload(){
   for(let i=0;i<lines.length;i++){
     if(cancelRequested) break;
     updateActiveLine(i);
-    const currentLine = lines[i];
-    const pauseMatch = currentLine.trim().match(/^\[(pause|静音):(\d+(\.\d+)?)\]$/i);
+    const currentLine = lines[i].trim();
+    const pauseMatch = currentLine.match(/\[(pause|静音):(\d+(\.\d+)?)\]/i);
+    const confirmMatch = currentLine.match(/^\[(confirm|确认)\]$/i);
 
-    if (pauseMatch) {
+    if (confirmMatch) {
+      const shouldContinue = await showConfirmModal();
+      if (!shouldContinue) {
+        cancelRequested = true;
+        setError('已取消。');
+      }
+    } else if (pauseMatch && (currentLine.startsWith('[') || currentLine.includes(':[') )) {
       const duration = parseFloat(pauseMatch[2]);
       await sleep(duration);
     } else {
@@ -610,5 +661,23 @@ rateSet075Btn.addEventListener('click', () => {
   rateRange.value = '0.75';
   rateValue.textContent = '0.75';
 });
+
+function showConfirmModal() {
+  const confirmModal = document.getElementById('confirmModal');
+  const confirmContinueBtn = document.getElementById('confirmContinueBtn');
+  const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+  return new Promise(resolve => {
+    confirmModal.style.display = 'flex';
+    confirmContinueBtn.onclick = () => {
+      confirmModal.style.display = 'none';
+      resolve(true); // 用户选择继续
+    };
+    confirmCancelBtn.onclick = () => {
+      confirmModal.style.display = 'none';
+      resolve(false); // 用户选择停止
+    };
+  });
+}
 </script>
 </body>
