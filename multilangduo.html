@@ -506,14 +506,14 @@ function initRecognition() {
   return rec;
 }
 
-function listenAndRecognize() {
+function listenAndRecognize(duration = 3) { // 接收时长参数，默认3秒
   return new Promise((resolve, reject) => {
     if (!recognition) recognition = initRecognition();
     if (!recognition) {
       return reject(new Error('此浏览器不支持语音识别。'));
     }
 
-    const sttModal = document.getElementById('sttModal');
+    const sttModal = document.getElementById('sttModal'); // 关键修改：即使出错，点击“继续”也应该 resolve()，让主流程继续下去，而不是 reject()
     const sttStatus = document.getElementById('sttStatus');
     const sttResult = document.getElementById('sttResult');
     const sttCloseBtn = document.getElementById('sttCloseBtn');
@@ -522,21 +522,31 @@ function listenAndRecognize() {
     sttResult.textContent = '';
     sttModal.style.display = 'flex';
 
+    let timerId = null;
+    const closeAndResolve = () => {
+      if (timerId) clearTimeout(timerId);
+      sttModal.style.display = 'none';
+      resolve();
+    };
+
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       sttStatus.textContent = '识别完成！';
       sttResult.textContent = transcript;
-      sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; resolve(); };
+      // 识别完成后，在指定时间后自动关闭
+      timerId = setTimeout(closeAndResolve, duration * 1000);
+      sttCloseBtn.onclick = closeAndResolve; // 允许手动提前关闭
     };
     recognition.onerror = (event) => {
       sttStatus.textContent = '识别出错';
       sttResult.textContent = event.error;
-      // 关键修改：即使出错，点击“继续”也应该 resolve()，让主流程继续下去，而不是 reject()
-      sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; resolve(); };
+      // 出错后，也在指定时间后自动关闭
+      timerId = setTimeout(closeAndResolve, duration * 1000);
+      sttCloseBtn.onclick = closeAndResolve;
     };
     recognition.onend = () => {
       // 如果没有结果，也允许关闭
-      if (sttStatus.textContent === '正在听你读...') {
+      if (sttStatus.textContent === '正在听你读...') { // 关键修改：即使出错，点击“继续”也应该 resolve()，让主流程继续下去，而不是 reject()
         sttStatus.textContent = '识别结束（未收到语音）';
         sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; resolve(); };
       }
@@ -589,9 +599,10 @@ async function readAloud(){
       }
     } else if (pauseMatch) {
         // 如果是 [pause:xx] 格式，则启动语音识别
+        const duration = parseFloat(pauseMatch[2]);
         btnCancel.disabled = false;
         try {
-            await listenAndRecognize();
+            await listenAndRecognize(duration);
         } catch (e) {
             setError('语音识别失败: ' + e);
             cancelRequested = true; // 出错时停止流程
@@ -710,8 +721,9 @@ async function speakAndDownload(){
       }
     } else if (pauseMatch) {
         // 如果是 [pause:xx] 格式，则启动语音识别
+        const duration = parseFloat(pauseMatch[2]);
         try {
-            await listenAndRecognize();
+            await listenAndRecognize(duration);
         } catch (e) {
             setError('语音识别失败: ' + e);
             cancelRequested = true; // 出错时停止流程
