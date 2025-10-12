@@ -520,7 +520,8 @@ function listenAndRecognize() {
     recognition.onerror = (event) => {
       sttStatus.textContent = '识别出错';
       sttResult.textContent = event.error;
-      sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; reject(event.error); };
+      // 关键修改：即使出错，点击“继续”也应该 resolve()，让主流程继续下去，而不是 reject()
+      sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; resolve(); };
     };
     recognition.onend = () => {
       // 如果没有结果，也允许关闭
