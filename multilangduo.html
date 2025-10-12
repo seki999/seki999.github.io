@@ -168,21 +168,6 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
 
     <div id="errorBox" class="error-message"></div>
   </div>
-  <!-- 确认弹窗 -->
-  <div class="modal-backdrop" id="confirmModal">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h3>等待确认</h3>
-      </div>
-      <div class="modal-content">
-        <p>朗读已暂停，请选择下一步操作。</p>
-      </div>
-      <div class="modal-actions">
-        <button id="confirmCancelBtn" class="action-button secondary">停止朗读</button>
-        <button id="confirmContinueBtn" class="action-button">继续朗读</button>
-      </div>
-    </div>
-  </div>
   <!-- 语音识别弹窗 -->
   <div class="modal-backdrop" id="sttModal">
     <div class="modal-dialog">
@@ -195,7 +180,8 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
         <div id="sttResult" class="stt-result"></div>
       </div>
       <div class="modal-actions">
-        <button id="sttCloseBtn" class="action-button">继续</button>
+        <button id="sttStopBtn" class="action-button secondary" style="display: none;">停止朗读</button>
+        <button id="sttContinueBtn" class="action-button">继续</button>
       </div>
     </div>
   </div>
@@ -506,56 +492,75 @@ function initRecognition() {
   return rec;
 }
 
-function listenAndRecognize(duration = 3) { // 接收时长参数，默认3秒
+function listenAndRecognize(options = {}) {
+  const { duration = 0, confirmMode = false } = options;
+
   return new Promise((resolve, reject) => {
     if (!recognition) recognition = initRecognition();
     if (!recognition) {
       return reject(new Error('此浏览器不支持语音识别。'));
     }
 
-    const sttModal = document.getElementById('sttModal'); // 关键修改：即使出错，点击“继续”也应该 resolve()，让主流程继续下去，而不是 reject()
+    const sttModal = document.getElementById('sttModal');
     const sttStatus = document.getElementById('sttStatus');
     const sttResult = document.getElementById('sttResult');
-    const sttCloseBtn = document.getElementById('sttCloseBtn');
+    const sttContinueBtn = document.getElementById('sttContinueBtn');
+    const sttStopBtn = document.getElementById('sttStopBtn');
+    const modalHeader = sttModal.querySelector('.modal-header h3');
 
     sttStatus.textContent = '正在听你读...';
     sttResult.textContent = '';
+    modalHeader.textContent = confirmMode ? '等待确认或语音输入' : '请说出英文句子';
+    sttStopBtn.style.display = confirmMode ? 'inline-block' : 'none';
     sttModal.style.display = 'flex';
 
     let timerId = null;
-    const closeAndResolve = () => {
+
+    const cleanupAndResolve = (value) => {
       if (timerId) clearTimeout(timerId);
       sttModal.style.display = 'none';
-      resolve();
+      // 移除事件监听器以防内存泄漏
+      sttContinueBtn.onclick = null;
+      sttStopBtn.onclick = null;
+      resolve(value);
     };
 
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       sttStatus.textContent = '识别完成！';
       sttResult.textContent = transcript;
-      // 识别完成后，在指定时间后自动关闭
-      timerId = setTimeout(closeAndResolve, duration * 1000);
-      sttCloseBtn.onclick = closeAndResolve; // 允许手动提前关闭
+      // 如果不是确认模式，并且有持续时间，则自动关闭
+      if (!confirmMode && duration > 0) {
+        timerId = setTimeout(() => cleanupAndResolve(true), duration * 1000);
+      }
     };
     recognition.onerror = (event) => {
       sttStatus.textContent = '识别出错';
       sttResult.textContent = event.error;
-      // 出错后，也在指定时间后自动关闭
-      timerId = setTimeout(closeAndResolve, duration * 1000);
-      sttCloseBtn.onclick = closeAndResolve;
-    };
-    recognition.onend = () => {
-      // 如果没有结果，也允许关闭
-      if (sttStatus.textContent === '正在听你读...') { // 关键修改：即使出错，点击“继续”也应该 resolve()，让主流程继续下去，而不是 reject()
-        sttStatus.textContent = '识别结束（未收到语音）';
-        sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; resolve(); };
+      if (!confirmMode && duration > 0) {
+        timerId = setTimeout(() => cleanupAndResolve(true), duration * 1000);
       }
     };
+    recognition.onend = () => {
+      if (sttStatus.textContent === '正在听你读...') {
+        sttStatus.textContent = '识别结束（未收到语音）';
+      }
+    };
+
+    // 绑定按钮事件
+    sttContinueBtn.onclick = () => cleanupAndResolve(true);
+    sttStopBtn.onclick = () => cleanupAndResolve(false);
+
+    // 如果是 pause 模式，在指定时间后自动继续
+    if (!confirmMode && duration > 0) {
+        timerId = setTimeout(() => cleanupAndResolve(true), duration * 1000);
+    }
 
     try {
       recognition.start();
     } catch (e) {
-      reject(e);
+      sttStatus.textContent = '启动识别失败';
+      sttResult.textContent = e.message;
     }
   });
 }
@@ -592,7 +597,7 @@ async function readAloud(){
     const confirmMatch = currentLine.match(/^\[(confirm|确认)\]$/i);
 
     if (confirmMatch) {
-      const shouldContinue = await showConfirmModal();
+      const shouldContinue = await listenAndRecognize({ confirmMode: true });
       if (!shouldContinue) {
         cancelRequested = true;
         setError('已取消。');
@@ -602,7 +607,7 @@ async function readAloud(){
         const duration = parseFloat(pauseMatch[2]);
         btnCancel.disabled = false;
         try {
-            await listenAndRecognize(duration);
+            await listenAndRecognize({ duration });
         } catch (e) {
             setError('语音识别失败: ' + e);
             cancelRequested = true; // 出错时停止流程
@@ -714,7 +719,7 @@ async function speakAndDownload(){
     const confirmMatch = currentLine.match(/^\[(confirm|确认)\]$/i);
 
     if (confirmMatch) {
-      const shouldContinue = await showConfirmModal();
+      const shouldContinue = await listenAndRecognize({ confirmMode: true });
       if (!shouldContinue) {
         cancelRequested = true;
         setError('已取消。');
@@ -723,7 +728,7 @@ async function speakAndDownload(){
         // 如果是 [pause:xx] 格式，则启动语音识别
         const duration = parseFloat(pauseMatch[2]);
         try {
-            await listenAndRecognize(duration);
+            await listenAndRecognize({ duration });
         } catch (e) {
             setError('语音识别失败: ' + e);
             cancelRequested = true; // 出错时停止流程
@@ -783,23 +788,5 @@ rateSet075Btn.addEventListener('click', () => {
   rateRange.value = '0.75';
   rateValue.textContent = '0.75';
 });
-
-function showConfirmModal() {
-  const confirmModal = document.getElementById('confirmModal');
-  const confirmContinueBtn = document.getElementById('confirmContinueBtn');
-  const confirmCancelBtn = document.getElementById('confirmCancelBtn');
-
-  return new Promise(resolve => {
-    confirmModal.style.display = 'flex';
-    confirmContinueBtn.onclick = () => {
-      confirmModal.style.display = 'none';
-      resolve(true); // 用户选择继续
-    };
-    confirmCancelBtn.onclick = () => {
-      confirmModal.style.display = 'none';
-      resolve(false); // 用户选择停止
-    };
-  });
-}
 </script>
 </body>
