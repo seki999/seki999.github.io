@@ -77,6 +77,21 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
 .modal-content { padding: 1.5rem; }
 .modal-actions { display:flex; gap:1rem; justify-content:flex-end; padding: 1rem 1.5rem; }
 .modal-actions .secondary { background: #757575; }
+
+/* 语音识别弹窗样式 */
+.stt-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.stt-status {
+  font-weight: 600;
+  color: #1976d2;
+}
+.stt-result {
+  min-height: 60px; background: #f7fafd; border: 1px solid #d8e4f5; border-radius: 8px; padding: .8rem;
+}
+.modal-actions .secondary { background: #757575; }
 </style>
 </head>
 <body>
@@ -154,6 +169,22 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
       <div class="modal-actions">
         <button id="confirmCancelBtn" class="action-button secondary">停止朗读</button>
         <button id="confirmContinueBtn" class="action-button">继续朗读</button>
+      </div>
+    </div>
+  </div>
+  <!-- 语音识别弹窗 -->
+  <div class="modal-backdrop" id="sttModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>请说出英文句子</h3>
+      </div>
+      <div class="modal-content stt-modal-content">
+        <div id="sttStatus" class="stt-status">准备中...</div>
+        <p>识别结果：</p>
+        <div id="sttResult" class="stt-result"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="sttCloseBtn" class="action-button">继续</button>
       </div>
     </div>
   </div>
@@ -450,6 +481,63 @@ function parseLine(raw){
   return { utterText, voice };
 }
 
+/* --- 新增：语音识别 (STT) --- */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+
+function initRecognition() {
+  if (!SpeechRecognition) return null;
+  const rec = new SpeechRecognition();
+  rec.lang = 'en-US'; // 假设跟读练习总是英文
+  rec.interimResults = false;
+  rec.continuous = false;
+  rec.maxAlternatives = 1;
+  return rec;
+}
+
+function listenAndRecognize() {
+  return new Promise((resolve, reject) => {
+    if (!recognition) recognition = initRecognition();
+    if (!recognition) {
+      return reject(new Error('此浏览器不支持语音识别。'));
+    }
+
+    const sttModal = document.getElementById('sttModal');
+    const sttStatus = document.getElementById('sttStatus');
+    const sttResult = document.getElementById('sttResult');
+    const sttCloseBtn = document.getElementById('sttCloseBtn');
+
+    sttStatus.textContent = '正在听你读...';
+    sttResult.textContent = '';
+    sttModal.style.display = 'flex';
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      sttStatus.textContent = '识别完成！';
+      sttResult.textContent = transcript;
+      sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; resolve(); };
+    };
+    recognition.onerror = (event) => {
+      sttStatus.textContent = '识别出错';
+      sttResult.textContent = event.error;
+      sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; reject(event.error); };
+    };
+    recognition.onend = () => {
+      // 如果没有结果，也允许关闭
+      if (sttStatus.textContent === '正在听你读...') {
+        sttStatus.textContent = '识别结束（未收到语音）';
+        sttCloseBtn.onclick = () => { sttModal.style.display = 'none'; resolve(); };
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 /* 实现一个异步的暂停函数 */
 function sleep(seconds) {
   return new Promise(resolve => {
@@ -487,11 +575,16 @@ async function readAloud(){
         cancelRequested = true;
         setError('已取消。');
       }
-    } else if (pauseMatch && (currentLine.startsWith('[') || currentLine.includes(':[') )) {
-      const duration = parseFloat(pauseMatch[2]);
-      btnCancel.disabled = false;
-      await sleep(duration);
-    } else {
+    } else if (pauseMatch) {
+        // 如果是 [pause:xx] 格式，则启动语音识别
+        btnCancel.disabled = false;
+        try {
+            await listenAndRecognize();
+        } catch (e) {
+            setError('语音识别失败: ' + e);
+            cancelRequested = true; // 出错时停止流程
+        }
+    }else {
       const { utterText, voice } = parseLine(currentLine);
       if(!voice){ setError('未找到语音。'); break; }
       btnCancel.disabled = false;
@@ -603,10 +696,15 @@ async function speakAndDownload(){
         cancelRequested = true;
         setError('已取消。');
       }
-    } else if (pauseMatch && (currentLine.startsWith('[') || currentLine.includes(':[') )) {
-      const duration = parseFloat(pauseMatch[2]);
-      await sleep(duration);
-    } else {
+    } else if (pauseMatch) {
+        // 如果是 [pause:xx] 格式，则启动语音识别
+        try {
+            await listenAndRecognize();
+        } catch (e) {
+            setError('语音识别失败: ' + e);
+            cancelRequested = true; // 出错时停止流程
+        }
+    }else {
       const { utterText, voice } = parseLine(currentLine);
       if(!voice){ setError('未找到语音。'); break; }
       try{
