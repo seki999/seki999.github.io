@@ -103,6 +103,23 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
 #sttModal .modal-dialog {
   width: min(960px, 95vw); /* 原来是 480px */
 }
+
+/* 新增：最终汇总弹窗样式 */
+#summaryDialog {
+  width: min(1200px, 90vw); /* 更宽 */
+  height: 80vh; /* 更高 */
+  display: flex;
+  flex-direction: column;
+}
+#summaryContent {
+  flex-grow: 1; /* 让内容区域填满可用空间 */
+  overflow-y: auto; /* 内容超长时显示滚动条 */
+  white-space: pre-wrap; /* 保持换行 */
+  background: #f7fafd;
+  font-family: monospace, sans-serif;
+  font-size: 1.1em;
+  padding: 1rem;
+}
 </style>
 </head>
 <body>
@@ -186,6 +203,20 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
     </div>
   </div>
 
+  <!-- 新增：最终汇总弹窗 -->
+  <div class="modal-backdrop" id="summaryModal">
+    <div class="modal-dialog" id="summaryDialog">
+      <div class="modal-header">
+        <h3>本次跟读识别汇总</h3>
+      </div>
+      <div id="summaryContent" class="modal-content">
+        <!-- 识别出的句子将在这里显示 -->
+      </div>
+      <div class="modal-actions">
+        <button id="summaryCloseBtn" class="action-button">关闭</button>
+      </div>
+    </div>
+  </div>
   <script>
 /* 状态 */
 const textEl = document.getElementById('textInput');
@@ -214,6 +245,7 @@ let voices = [];
 let cancelRequested = false;
 let currentLineIndex = -1;
 let speaker2Initialized = false;
+let recognizedSentences = []; // 新增：用于收集所有识别的句子
 /* 新增：记录用户是否主动改过语言，下次刷新不再覆盖 */
 let userPickedSpeaker1Lang = false;
 let userPickedSpeaker2Lang = false;
@@ -529,6 +561,7 @@ function listenAndRecognize(options = {}) {
       const transcript = event.results[0][0].transcript;
       sttStatus.textContent = '识别完成！';
       sttResult.textContent = transcript;
+      recognizedSentences.push(transcript); // 收集识别结果
       // 如果不是确认模式，并且有持续时间，则自动关闭
       if (!confirmMode && duration > 0) {
         timerId = setTimeout(() => cleanupAndResolve(true), duration * 1000);
@@ -565,6 +598,20 @@ function listenAndRecognize(options = {}) {
   });
 }
 
+/* 新增：显示最终汇总弹窗的函数 */
+function showSummaryModal() {
+  const summaryModal = document.getElementById('summaryModal');
+  const summaryContent = document.getElementById('summaryContent');
+  const summaryCloseBtn = document.getElementById('summaryCloseBtn');
+
+  if (recognizedSentences.length > 0) {
+    summaryContent.textContent = recognizedSentences.join('\n');
+    summaryModal.style.display = 'flex';
+  }
+
+  summaryCloseBtn.onclick = () => { summaryModal.style.display = 'none'; };
+}
+
 /* 实现一个异步的暂停函数 */
 function sleep(seconds) {
   return new Promise(resolve => {
@@ -579,6 +626,7 @@ function sleep(seconds) {
 async function readAloud(){
   if(synth.speaking) synth.cancel();
   cancelRequested = false;
+  recognizedSentences = []; // 开始时清空
   setError('');
   const lines = getLines();
   if(!lines.length || voices.length === 0){
@@ -628,6 +676,7 @@ async function readAloud(){
   btnRead.disabled = false;
   btnSpeakDownload.disabled = false;
   btnCancel.disabled = true;
+  showSummaryModal(); // 结束后显示汇总
 }
 
 /* WAV 录音器：开始共享后返回 stop */
@@ -689,6 +738,7 @@ function startWavRecorder(){
 async function speakAndDownload(){
   if(synth.speaking) synth.cancel();
   cancelRequested = false;
+  recognizedSentences = []; // 开始时清空
   setError('请在弹窗中选择“此标签页”并勾选共享音频。');
   const lines = getLines();
   if(!lines.length || voices.length === 0){
@@ -759,6 +809,7 @@ async function speakAndDownload(){
   }
   btnRead.disabled = false;
   btnSpeakDownload.disabled = false;
+  showSummaryModal(); // 结束后显示汇总
 }
 
 /* 取消按钮 */
