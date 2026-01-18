@@ -268,11 +268,11 @@ let speaker2EnglishDefaultApplied = false;
 
 /* 初始文本示例 */
 textEl.value = `Speaker 1: 大家好，我们来测试一下静音功能。
-[pause:1.5]
+{pause:1.5}
 Speaker 2: 接下来会弹出一个确认框。
-[confirm]
+{confirm}
 Speaker 1: 你好，你刚才点击了继续。
-[确认]
+{确认}
 Speaker 2: 测试结束。`;
 
 /* 工具函数 */
@@ -514,6 +514,8 @@ function parseLine(raw){
   }else{
     voice = voices.find(v=>v.voiceURI === speaker1VoiceEl.value);
   }
+  // 过滤掉 [] 包裹的内容，例如 [suːˈpɜːrlətɪvz]
+  utterText = utterText.replace(/\[.*?\]/g, '');
   return { utterText, voice };
 }
 
@@ -648,8 +650,8 @@ async function readAloud(){
     if(cancelRequested) break;
     updateActiveLine(i);
     const currentLine = lines[i].trim();
-    const pauseMatch = currentLine.match(/\[(pause|静音):(\d+(\.\d+)?)\]/i);
-    const confirmMatch = currentLine.match(/^\[(confirm|确认)\]$/i);
+    const pauseMatch = currentLine.match(/\{(pause|静音):(\d+(\.\d+)?)\}/i);
+    const confirmMatch = currentLine.match(/^\{(confirm|确认)\}$/i);
 
     if (confirmMatch) {
       const shouldContinue = await listenAndRecognize({ confirmMode: true });
@@ -658,7 +660,7 @@ async function readAloud(){
         setError('已取消。');
       }
     } else if (pauseMatch) {
-        // 如果是 [pause:xx] 格式，则启动语音识别
+        // 如果是 {pause:xx} 格式，则启动语音识别
         const duration = parseFloat(pauseMatch[2]);
         btnCancel.disabled = false;
         try {
@@ -772,8 +774,8 @@ async function speakAndDownload(){
     if(cancelRequested) break;
     updateActiveLine(i);
     const currentLine = lines[i].trim();
-    const pauseMatch = currentLine.match(/\[(pause|静音):(\d+(\.\d+)?)\]/i);
-    const confirmMatch = currentLine.match(/^\[(confirm|确认)\]$/i);
+    const pauseMatch = currentLine.match(/\{(pause|静音):(\d+(\.\d+)?)\}/i);
+    const confirmMatch = currentLine.match(/^\{(confirm|确认)\}$/i);
 
     if (confirmMatch) {
       const shouldContinue = await listenAndRecognize({ confirmMode: true });
@@ -782,7 +784,7 @@ async function speakAndDownload(){
         setError('已取消。');
       }
     } else if (pauseMatch) {
-        // 如果是 [pause:xx] 格式，则启动语音识别
+        // 如果是 {pause:xx} 格式，则启动语音识别
         const duration = parseFloat(pauseMatch[2]);
         try {
             await listenAndRecognize({ duration });
