@@ -204,8 +204,9 @@ h1{margin:0 0 .5rem;font-size:1.7rem;}
         <div id="sttResult" class="stt-result"></div>
       </div>
       <div class="modal-actions">
-        <button id="sttStopBtn" class="action-button secondary" style="display: none;">停止朗读</button>
-        <button id="sttContinueBtn" class="action-button">继续</button>
+        <button id="sttStopBtn" class="action-button secondary" style="display: none;">退出任务</button>
+        <button id="sttStopRecBtn" class="action-button secondary" style="display: none; background-color: #ef6c00;">停止录音</button>
+        <button id="sttContinueBtn" class="action-button">完成并继续</button>
       </div>
     </div>
   </div>
@@ -547,30 +548,53 @@ function listenAndRecognize(options = {}) {
     const sttResult = document.getElementById('sttResult');
     const sttContinueBtn = document.getElementById('sttContinueBtn');
     const sttStopBtn = document.getElementById('sttStopBtn');
+    const sttStopRecBtn = document.getElementById('sttStopRecBtn');
     const modalHeader = sttModal.querySelector('.modal-header h3');
 
     sttStatus.textContent = '正在听你读...';
     sttResult.textContent = '';
     modalHeader.textContent = confirmMode ? '等待确认或语音输入' : '请说出英文句子';
     sttStopBtn.style.display = confirmMode ? 'inline-block' : 'none';
+    sttStopRecBtn.style.display = confirmMode ? 'inline-block' : 'none';
     sttModal.style.display = 'flex';
 
     let timerId = null;
+    let currentSessionTranscript = '';
+
+    // 启用连续录入和中间结果
+    recognition.continuous = true;
+    recognition.interimResults = true;
 
     const cleanupAndResolve = (value) => {
       if (timerId) clearTimeout(timerId);
+      recognition.stop();
       sttModal.style.display = 'none';
       // 移除事件监听器以防内存泄漏
       sttContinueBtn.onclick = null;
       sttStopBtn.onclick = null;
+      sttStopRecBtn.onclick = null;
+
+      // 保存本次会话的识别结果
+      if (value && currentSessionTranscript) {
+        recognizedSentences.push(currentSessionTranscript);
+      }
+
       resolve(value);
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      sttStatus.textContent = '识别完成！';
-      sttResult.textContent = transcript;
-      recognizedSentences.push(transcript); // 收集识别结果
+      let interim = '';
+      currentSessionTranscript = '';
+      for (let i = 0; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          currentSessionTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      sttStatus.textContent = '正在录入...';
+      sttResult.textContent = currentSessionTranscript + (interim ? ' (' + interim + ')' : '');
+
       // 如果不是确认模式，并且有持续时间，则自动关闭
       if (!confirmMode && duration > 0) {
         timerId = setTimeout(() => cleanupAndResolve(true), duration * 1000);
@@ -592,6 +616,10 @@ function listenAndRecognize(options = {}) {
     // 绑定按钮事件
     sttContinueBtn.onclick = () => cleanupAndResolve(true);
     sttStopBtn.onclick = () => cleanupAndResolve(false);
+    sttStopRecBtn.onclick = () => {
+      recognition.stop();
+      sttStatus.textContent = '已停止录入 (点击“继续”以完成)';
+    };
 
     // 如果是 pause 模式，在指定时间后自动继续
     if (!confirmMode && duration > 0) {
