@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LLM Voice Tutor - Local English Speaking Coach</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111832;
+      --panel-2: #151e3d;
+      --text: #eaf0ff;
+      --muted: #91a4c7;
+      --accent: #5b8cff;
+      --accent-2: #18c964;
+      --warn: #ffb020;
+      --danger: #ff5d5d;
+      --border: rgba(255,255,255,.1);
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 8% -10%, #233463 0%, transparent 65%),
+        radial-gradient(900px 500px at 95% 10%, #1d3c45 0%, transparent 60%),
+        var(--bg);
+    }
+
+    .app {
+      width: min(1280px, 96vw);
+      margin: 28px auto 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .title h1 {
+      margin: 0 0 6px;
+      font-size: clamp(24px, 3vw, 38px);
+      letter-spacing: .3px;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #64748b;
+      box-shadow: 0 0 0 5px rgba(100,116,139,.12);
+    }
+
+    .dot.listening { background: var(--accent-2); box-shadow: 0 0 0 5px rgba(24,201,100,.14); }
+    .dot.thinking { background: var(--warn); box-shadow: 0 0 0 5px rgba(255,176,32,.14); }
+    .dot.speaking { background: var(--accent); box-shadow: 0 0 0 5px rgba(91,140,255,.16); }
+    .dot.error { background: var(--danger); box-shadow: 0 0 0 5px rgba(255,93,93,.14); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 17px;
+      border-bottom: 1px solid rgba(255,255,255,.075);
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 14px;
+      color: #c8d6f5;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+    }
+
+    .card-body { padding: 16px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .listen-box {
+      padding: 24px;
+      border: 1px solid rgba(91,140,255,.28);
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(91,140,255,.14), rgba(24,201,100,.08));
+      text-align: center;
+    }
+
+    .mic-circle {
+      width: 118px;
+      height: 118px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #6b93ff, #4b70ff);
+      box-shadow: 0 22px 55px rgba(91,140,255,.35);
+      font-size: 48px;
+      transition: transform .18s ease, filter .2s ease;
+    }
+
+    .mic-circle.active {
+      transform: scale(1.04);
+      filter: brightness(1.08);
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(24,201,100,.34), 0 22px 55px rgba(91,140,255,.35); }
+      70% { box-shadow: 0 0 0 18px rgba(24,201,100,0), 0 22px 55px rgba(91,140,255,.35); }
+      100% { box-shadow: 0 0 0 0 rgba(24,201,100,0), 0 22px 55px rgba(91,140,255,.35); }
+    }
+
+    .listen-box h3 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .listen-box p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 11px 18px;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(180deg, #6b93ff, #4a6fff);
+      box-shadow: 0 12px 28px rgba(0,0,0,.28);
+      transition: transform .08s ease, filter .18s ease, opacity .18s ease;
+    }
+
+    .btn:hover { filter: brightness(1.06); }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: .52; cursor: not-allowed; }
+    .btn.secondary { background: linear-gradient(180deg, #2d375f, #222a4f); color: #dce6ff; }
+    .btn.success { background: linear-gradient(180deg, #29d47e, #14ad64); }
+    .btn.danger { background: linear-gradient(180deg, #ff7878, #ed4646); }
+
+    .field { margin-bottom: 13px; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #c7d5f2;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      color: var(--text);
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 13px;
+      outline: none;
+      padding: 11px 12px;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(91,140,255,.16);
+    }
+
+    select option {
+      background: #172143;
+      color: #fff;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--muted);
+      background: rgba(255,255,255,.055);
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .transcript-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 13px;
+    }
+
+    .message-box {
+      padding: 14px;
+      border-radius: 15px;
+      border: 1px solid rgba(255,255,255,.095);
+      background: rgba(255,255,255,.04);
+    }
+
+    .message-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 9px;
+      color: #c7d5f2;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .message-content {
+      min-height: 54px;
+      white-space: pre-wrap;
+      line-height: 1.62;
+      color: #eef4ff;
+    }
+
+    .message-content.empty {
+      color: #879abd;
+    }
+
+    .history {
+      display: grid;
+      gap: 12px;
+      max-height: 560px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .history-item {
+      border: 1px solid rgba(255,255,255,.09);
+      background: rgba(255,255,255,.035);
+      border-radius: 15px;
+      padding: 12px;
+    }
+
+    .history-item .user {
+      color: #dce7ff;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .history-item .assistant {
+      color: #d8ffe9;
+      line-height: 1.5;
+    }
+
+    .footer-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .meter {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      margin-top: 12px;
+    }
+
+    .meter > div {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #18c964, #5b8cff);
+      transition: width .12s ease;
+    }
+
+    @media (max-width: 980px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .layout { grid-template-columns: 1fr; }
+      .row, .mini-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>LLM Voice Tutor</h1>
+        <p>本地 HTML 英语口语练习：浏览器语音识别 → 本地 LLM 矫正与回答 → 浏览器朗读</p>
+      </div>
+      <div class="status" aria-live="polite">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">就绪</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main class="card">
+        <div class="card-header">
+          <h2>Speaking Practice</h2>
+          <span class="pill" id="silenceHint">静音 5 秒自动停止</span>
+        </div>
+        <div class="card-body hero">
+          <section class="listen-box">
+            <div class="mic-circle" id="micCircle">🎙️</div>
+            <h3 id="mainPrompt">按下按钮开始说英语</h3>
+            <p>说完后保持安静 5 秒，系统会自动停止识别，然后调用本地 LLM 进行英文修正并给出自然回答。</p>
+            <div class="meter" title="识别中会根据声音事件变化，部分浏览器可能不支持实时音量。"><div id="listenMeter"></div></div>
+            <div class="controls">
+              <button class="btn success" id="startBtn">开始语音输入</button>
+              <button class="btn danger" id="stopBtn" disabled>停止</button>
+              <button class="btn secondary" id="speakAgainBtn" disabled>重新朗读回答</button>
+              <button class="btn secondary" id="clearBtn">清空</button>
+            </div>
+          </section>
+
+          <section class="transcript-grid">
+            <div class="message-box">
+              <div class="message-title">
+                <span>你的原始识别文本</span>
+                <span class="pill">SpeechRecognition</span>
+              </div>
+              <div id="rawText" class="message-content empty">还没有语音输入。</div>
+            </div>
+
+            <div class="message-box">
+              <div class="message-title">
+                <span>LLM 矫正后的英文</span>
+                <span class="pill">Correction</span>
+              </div>
+              <div id="correctedText" class="message-content empty">等待本地 LLM 返回。</div>
+            </div>
+
+            <div class="message-box">
+              <div class="message-title">
+                <span>LLM 回答</span>
+                <span class="pill">Tutor Reply + TTS</span>
+              </div>
+              <div id="replyText" class="message-content empty">回答会显示在这里，并自动朗读出来。</div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <aside class="card">
+        <div class="card-header">
+          <h2>Local LLM Settings</h2>
+          <button class="btn secondary" id="saveSettingsBtn">保存设置</button>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label for="endpointInput">本地 LLM API 地址</label>
+            <input id="endpointInput" type="text" value="http://localhost:1234/v1/chat/completions" />
+            <div class="hint">默认兼容 LM Studio 的 OpenAI-compatible API。Ollama 也可以通过 OpenAI-compatible 地址使用，例如 /v1/chat/completions。</div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="modelInput">模型名</label>
+              <input id="modelInput" type="text" value="qwen2.5-1.5b-instruct-unsloth-bnb-thinker" placeholder="例如 qwen2.5-7b-instruct" />
+            </div>
+            <div class="field">
+              <label for="apiKeyInput">API Key，可空</label>
+              <input id="apiKeyInput" type="text" value="" placeholder="本地服务通常可以留空" />
+            </div>
+          </div>
+
+          <div class="mini-grid">
+            <div class="field">
+              <label for="languageSelect">识别语言</label>
+              <select id="languageSelect">
+                <option value="en-US">English - US</option>
+                <option value="en-GB">English - UK</option>
+                <option value="en-AU">English - AU</option>
+                <option value="en-CA">English - CA</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="silenceSeconds">静音停止秒数</label>
+              <input id="silenceSeconds" type="number" min="2" max="15" step="1" value="5" />
+            </div>
+            <div class="field">
+              <label for="temperatureInput">Temperature</label>
+              <input id="temperatureInput" type="number" min="0" max="2" step="0.1" value="0.4" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="voiceSelect">朗读声音</label>
+            <select id="voiceSelect"></select>
+          </div>
+
+          <div class="field">
+            <label for="systemPrompt">基础提示词</label>
+            <textarea id="systemPrompt">You are a friendly English conversation partner for a Chinese/Japanese bilingual learner.
+
+The user speaks English by voice. You will receive the browser speech-recognition transcript.
+
+The user may provide extra instructions, topics, or a vocabulary list in the additional prompt.
+If the additional prompt contains a word list, new words, vocabulary items, or phrases, automatically detect them and use them as conversation targets.
+
+Your main goal is to continue the conversation naturally, like a real chat partner, while helping the user practice the target vocabulary.
+
+Your tasks:
+1. Understand the user's intended meaning from the speech-recognition transcript.
+2. Reply naturally and conversationally in English.
+3. If a vocabulary list is provided in the additional prompt, choose 1-3 suitable words or phrases from that list and naturally include them in your reply.
+4. Do not force every word into one reply. Use the words gradually across the conversation.
+5. Prefer words that fit the current context. If the user's topic is unrelated, gently guide the conversation toward a topic where one of the target words can be used.
+6. Keep your reply short and easy to speak aloud, usually 1-3 sentences.
+7. Do not behave like a strict grammar checker.
+8. Only correct the user's English when it is clearly unnatural or hard to understand.
+9. If you correct something, keep the explanation short, friendly, and in Chinese.
+10. If the user's English is already understandable, give a short encouraging note in Chinese instead.
+11. When appropriate, ask one simple follow-up question to keep the conversation going.
+12. Return strict JSON only, no markdown.
+
+JSON format:
+{
+  "corrected": "what the user probably wanted to say, in natural spoken English",
+  "reply": "your natural conversational English reply, suitable for speaking aloud and using target vocabulary when appropriate",
+  "note_cn": "short Chinese note, either a light correction, encouragement, or explanation of the target vocabulary used"
+}</textarea>
+          </div>
+
+          <div class="field">
+            <label for="extraPrompt">追加提示词 / 练习主题</label>
+            <textarea id="extraPrompt" placeholder="例如：今天练习商务英语。回答不要太长。请多鼓励我。">
+New words:
+wreak, reluctant, compromise, eventually, practical
+Please create a natural conversation using these words gradually.
+            </textarea>
+          </div>
+
+          <div class="footer-actions">
+            <button class="btn secondary" id="testLLMBtn">测试 LLM</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="card" style="margin-top:18px;">
+      <div class="card-header">
+        <h2>Conversation History</h2>
+        <span class="pill" id="historyCount">0 turns</span>
+      </div>
+      <div class="card-body">
+        <div class="history" id="history"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const qs = (sel) => document.querySelector(sel);
+
+    const statusDot = qs('#statusDot');
+    const statusText = qs('#statusText');
+    const micCircle = qs('#micCircle');
+    const listenMeter = qs('#listenMeter');
+    const startBtn = qs('#startBtn');
+    const stopBtn = qs('#stopBtn');
+    const speakAgainBtn = qs('#speakAgainBtn');
+    const clearBtn = qs('#clearBtn');
+    const rawText = qs('#rawText');
+    const correctedText = qs('#correctedText');
+    const replyText = qs('#replyText');
+    const historyEl = qs('#history');
+    const historyCount = qs('#historyCount');
+    const mainPrompt = qs('#mainPrompt');
+    const silenceHint = qs('#silenceHint');
+
+    const endpointInput = qs('#endpointInput');
+    const modelInput = qs('#modelInput');
+    const apiKeyInput = qs('#apiKeyInput');
+    const languageSelect = qs('#languageSelect');
+    const silenceSeconds = qs('#silenceSeconds');
+    const temperatureInput = qs('#temperatureInput');
+    const voiceSelect = qs('#voiceSelect');
+    const systemPrompt = qs('#systemPrompt');
+    const extraPrompt = qs('#extraPrompt');
+    const saveSettingsBtn = qs('#saveSettingsBtn');
+    const testLLMBtn = qs('#testLLMBtn');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const synth = window.speechSynthesis;
+
+    let recognition = null;
+    let isListening = false;
+    let silenceTimer = null;
+    let meterTimer = null;
+    let finalTranscript = '';
+    let interimTranscript = '';
+    let lastReply = '';
+    let turns = [];
+    let voices = [];
+
+    function setStatus(mode, text) {
+      statusDot.className = 'dot' + (mode ? ' ' + mode : '');
+      statusText.textContent = text || '就绪';
+    }
+
+    function setBox(el, text, emptyText) {
+      const value = (text || '').trim();
+      el.textContent = value || emptyText;
+      el.classList.toggle('empty', !value);
+    }
+
+    function saveSettings() {
+      const data = {
+        endpoint: endpointInput.value.trim(),
+        model: modelInput.value.trim(),
+        apiKey: apiKeyInput.value,
+        lang: languageSelect.value,
+        silenceSeconds: silenceSeconds.value,
+        temperature: temperatureInput.value,
+        voiceURI: voiceSelect.value,
+        systemPrompt: systemPrompt.value,
+        extraPrompt: extraPrompt.value
+      };
+      localStorage.setItem('llmVoiceTutorSettings', JSON.stringify(data));
+      setStatus('', '设置已保存');
+    }
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem('llmVoiceTutorSettings');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        endpointInput.value = data.endpoint || endpointInput.value;
+        modelInput.value = data.model || modelInput.value;
+        apiKeyInput.value = data.apiKey || '';
+        languageSelect.value = data.lang || languageSelect.value;
+        silenceSeconds.value = data.silenceSeconds || silenceSeconds.value;
+        temperatureInput.value = data.temperature || temperatureInput.value;
+        systemPrompt.value = data.systemPrompt || systemPrompt.value;
+        extraPrompt.value = data.extraPrompt || extraPrompt.value;
+        voiceSelect.dataset.savedVoiceURI = data.voiceURI || '';
+      } catch (e) {
+        console.warn('Failed to load settings:', e);
+      }
+    }
+
+    function populateVoices() {
+      voices = synth ? synth.getVoices() : [];
+      const allowed = ['en-US', 'en-GB', 'en-AU', 'en-CA'];
+      const englishVoices = voices
+        .filter(v => allowed.includes(v.lang) || /^en[-_]/i.test(v.lang))
+        .sort((a,b) => {
+          const ai = allowed.indexOf(a.lang);
+          const bi = allowed.indexOf(b.lang);
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+
+      voiceSelect.innerHTML = '';
+      if (englishVoices.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '未检测到英语朗读声音';
+        voiceSelect.appendChild(opt);
+        return;
+      }
+
+      englishVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voiceURI;
+        opt.textContent = `${v.name} — ${v.lang}${v.default ? ' (默认)' : ''}`;
+        voiceSelect.appendChild(opt);
+      });
+
+      const saved = voiceSelect.dataset.savedVoiceURI;
+      const preferred = englishVoices.find(v => v.voiceURI === saved)
+        || englishVoices.find(v => v.lang === languageSelect.value && /emma|jenny|aria|samantha/i.test(v.name))
+        || englishVoices.find(v => v.lang === languageSelect.value)
+        || englishVoices[0];
+
+      if (preferred) voiceSelect.value = preferred.voiceURI;
+    }
+
+    function speak(text) {
+      return new Promise((resolve, reject) => {
+        if (!synth || !text) return resolve();
+        try { synth.cancel(); } catch (e) {}
+
+        const utter = new SpeechSynthesisUtterance(text);
+        const selected = voices.find(v => v.voiceURI === voiceSelect.value);
+        if (selected) utter.voice = selected;
+        utter.lang = selected ? selected.lang : languageSelect.value;
+        utter.rate = 0.88;
+        utter.pitch = 1;
+        utter.onstart = () => setStatus('speaking', '正在朗读回答…');
+        utter.onend = () => { setStatus('', '就绪'); resolve(); };
+        utter.onerror = (e) => { setStatus('error', '朗读出错'); reject(e); };
+        synth.speak(utter);
+      });
+    }
+
+    function resetSilenceTimer() {
+      clearTimeout(silenceTimer);
+      const seconds = Math.max(2, Number(silenceSeconds.value) || 5);
+      silenceHint.textContent = `静音 ${seconds} 秒自动停止`;
+      silenceTimer = setTimeout(() => {
+        if (isListening) stopListening('silent');
+      }, seconds * 1000);
+    }
+
+    function startMeter() {
+      let n = 0;
+      clearInterval(meterTimer);
+      meterTimer = setInterval(() => {
+        if (!isListening) {
+          listenMeter.style.width = '0%';
+          clearInterval(meterTimer);
+          return;
+        }
+        n = (n + 17) % 100;
+        const value = 35 + Math.abs(50 - n);
+        listenMeter.style.width = Math.min(100, value) + '%';
+      }, 180);
+    }
+
+    function initRecognition() {
+      if (!SpeechRecognition) return null;
+
+      const rec = new SpeechRecognition();
+      rec.lang = languageSelect.value || 'en-US';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      rec.onaudiostart = () => {
+        resetSilenceTimer();
+      };
+
+      rec.onsoundstart = () => {
+        resetSilenceTimer();
+        setStatus('listening', '检测到声音，正在识别…');
+      };
+
+      rec.onspeechstart = () => {
+        resetSilenceTimer();
+        setStatus('listening', '正在听你说英语…');
+      };
+
+      rec.onspeechend = () => {
+        resetSilenceTimer();
+        setStatus('listening', '等待是否继续说话…');
+      };
+
+      rec.onresult = (event) => {
+        resetSilenceTimer();
+        interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript || '';
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript.trim() + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const visible = (finalTranscript + interimTranscript).trim();
+        setBox(rawText, visible, '正在等待语音识别结果…');
+      };
+
+      rec.onerror = (e) => {
+        console.error(e);
+        setStatus('error', '语音识别出错：' + (e.error || 'unknown'));
+        stopListening('error');
+      };
+
+      rec.onend = () => {
+        if (isListening) {
+          try {
+            rec.start();
+          } catch (e) {
+            console.warn('Recognition restart failed:', e);
+          }
+        }
+      };
+
+      return rec;
+    }
+
+    async function startListening() {
+      if (!SpeechRecognition) {
+        alert('当前浏览器不支持 SpeechRecognition。请使用最新版 Chrome 或 Edge。');
+        return;
+      }
+
+      try { synth && synth.cancel(); } catch (e) {}
+
+      finalTranscript = '';
+      interimTranscript = '';
+      setBox(rawText, '', '正在等待你说话…');
+      setBox(correctedText, '', '等待本地 LLM 返回。');
+      setBox(replyText, '', '回答会显示在这里，并自动朗读出来。');
+      lastReply = '';
+
+      recognition = initRecognition();
+      isListening = true;
+      micCircle.classList.add('active');
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      speakAgainBtn.disabled = true;
+      mainPrompt.textContent = '正在听，请开始说英语';
+      setStatus('listening', '正在听你说英语…');
+      startMeter();
+      resetSilenceTimer();
+      recognition.start();
+    }
+
+    async function stopListening(reason = 'manual') {
+      if (!isListening) return;
+      isListening = false;
+      clearTimeout(silenceTimer);
+      clearInterval(meterTimer);
+      listenMeter.style.width = '0%';
+      micCircle.classList.remove('active');
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      mainPrompt.textContent = reason === 'silent' ? '检测到静音，已停止输入' : '语音输入已停止';
+
+      try {
+        recognition && recognition.stop();
+      } catch (e) {}
+
+      const text = (finalTranscript + interimTranscript).trim();
+      setBox(rawText, text, '没有识别到内容。');
+
+      if (!text) {
+        setStatus('', '没有识别到内容');
+        return;
+      }
+
+      await askLocalLLM(text);
+    }
+
+    function extractJsonObject(text) {
+      const trimmed = (text || '').trim();
+      try { return JSON.parse(trimmed); } catch (e) {}
+
+      const match = trimmed.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { return JSON.parse(match[0]); } catch (e) {}
+      }
+      return null;
+    }
+
+    async function askLocalLLM(userSpeechText) {
+      setStatus('thinking', '正在调用本地 LLM…');
+      setBox(correctedText, '', '本地 LLM 正在矫正…');
+      setBox(replyText, '', '本地 LLM 正在生成回答…');
+
+      const endpoint = endpointInput.value.trim();
+      const model = modelInput.value.trim() || 'local-model';
+      const apiKey = apiKeyInput.value;
+      const temperature = Number(temperatureInput.value) || 0.4;
+
+      const messages = [
+        { role: 'system', content: systemPrompt.value.trim() },
+        { role: 'system', content: extraPrompt.value.trim() },
+        ...turns.slice(-6).flatMap(t => ([
+          { role: 'user', content: `Previous user transcript: ${t.raw}` },
+          { role: 'assistant', content: `Previous corrected: ${t.corrected}\nPrevious reply: ${t.reply}` }
+        ])),
+        { role: 'user', content: `Browser speech-recognition transcript:\n${userSpeechText}` }
+      ];
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey.trim()) headers.Authorization = `Bearer ${apiKey.trim()}`;
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature,
+            stream: false
+          })
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content || data?.message?.content || '';
+        const json = extractJsonObject(content);
+
+        let corrected = '';
+        let reply = '';
+        let note = '';
+
+        if (json) {
+          corrected = json.corrected || '';
+          reply = json.reply || '';
+          note = json.note_cn || json.note || '';
+        } else {
+          corrected = userSpeechText;
+          reply = content || 'I understood you. Please try one more sentence.';
+          note = '模型没有返回标准 JSON，已直接显示原始回答。';
+        }
+
+        const correctedView = note ? `${corrected}\n\n说明：${note}` : corrected;
+        setBox(correctedText, correctedView, '没有矫正结果。');
+        setBox(replyText, reply, '没有回答。');
+
+        lastReply = reply;
+        speakAgainBtn.disabled = !reply;
+        turns.push({ raw: userSpeechText, corrected, reply, note, at: new Date().toLocaleTimeString() });
+        renderHistory();
+        saveSettings();
+
+        if (reply) await speak(reply);
+        setStatus('', '完成');
+      } catch (e) {
+        console.error(e);
+        setStatus('error', '调用本地 LLM 失败');
+        setBox(correctedText, userSpeechText, '调用失败。');
+        setBox(replyText, '调用本地 LLM 失败：\n' + (e.message || e), '调用失败。');
+      }
+    }
+
+    function renderHistory() {
+      historyCount.textContent = `${turns.length} turns`;
+      historyEl.innerHTML = '';
+      [...turns].reverse().forEach((t, index) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+          <div class="hint">#${turns.length - index} · ${escapeHtml(t.at)}</div>
+          <div class="user"><strong>You:</strong> ${escapeHtml(t.raw)}</div>
+          <div class="user"><strong>Corrected:</strong> ${escapeHtml(t.corrected)}</div>
+          <div class="assistant"><strong>Tutor:</strong> ${escapeHtml(t.reply)}</div>
+          ${t.note ? `<div class="hint">${escapeHtml(t.note)}</div>` : ''}
+        `;
+        historyEl.appendChild(item);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    async function testLLM() {
+      await askLocalLLM('Hello, I want practice English speaking every day.');
+    }
+
+    startBtn.addEventListener('click', startListening);
+    stopBtn.addEventListener('click', () => stopListening('manual'));
+    speakAgainBtn.addEventListener('click', () => speak(lastReply));
+    clearBtn.addEventListener('click', () => {
+      turns = [];
+      renderHistory();
+      setBox(rawText, '', '还没有语音输入。');
+      setBox(correctedText, '', '等待本地 LLM 返回。');
+      setBox(replyText, '', '回答会显示在这里，并自动朗读出来。');
+      lastReply = '';
+      speakAgainBtn.disabled = true;
+      try { synth && synth.cancel(); } catch (e) {}
+      setStatus('', '已清空');
+    });
+    saveSettingsBtn.addEventListener('click', saveSettings);
+    testLLMBtn.addEventListener('click', testLLM);
+
+    silenceSeconds.addEventListener('input', () => {
+      const seconds = Math.max(2, Number(silenceSeconds.value) || 5);
+      silenceHint.textContent = `静音 ${seconds} 秒自动停止`;
+      if (isListening) resetSilenceTimer();
+    });
+
+    languageSelect.addEventListener('change', () => {
+      populateVoices();
+      saveSettings();
+    });
+
+    window.addEventListener('load', () => {
+      loadSettings();
+      populateVoices();
+      if (synth) {
+        synth.onvoiceschanged = populateVoices;
+      }
+      if (!SpeechRecognition) {
+        setStatus('error', '浏览器不支持语音识别');
+      } else {
+        setStatus('', '就绪');
+      }
+    });
+  </script>
+</body>
+</html>
