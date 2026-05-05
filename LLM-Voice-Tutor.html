@@ -552,6 +552,7 @@ JSON format:
 
     let recognition = null;
     let isListening = false;
+    let isProcessing = false;
     let silenceTimer = null;
     let meterTimer = null;
     let finalTranscript = '';
@@ -643,9 +644,17 @@ JSON format:
     }
 
     function speak(text) {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         if (!synth || !text) return resolve();
         try { synth.cancel(); } catch (e) {}
+
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          setStatus('', '就绪');
+          resolve();
+        };
 
         const utter = new SpeechSynthesisUtterance(text);
         const selected = voices.find(v => v.voiceURI === voiceSelect.value);
@@ -654,8 +663,14 @@ JSON format:
         utter.rate = 0.88;
         utter.pitch = 1;
         utter.onstart = () => setStatus('speaking', '正在朗读回答…');
-        utter.onend = () => { setStatus('', '就绪'); resolve(); };
-        utter.onerror = (e) => { setStatus('error', '朗读出错'); reject(e); };
+        utter.onend = finish;
+        utter.onerror = finish;
+
+        // Some browsers occasionally fail to fire onend after cancel/start cycles.
+        // This fallback prevents the app from getting stuck after the first reply.
+        const fallbackMs = Math.max(5000, text.length * 120);
+        setTimeout(finish, fallbackMs);
+
         synth.speak(utter);
       });
     }
@@ -749,6 +764,11 @@ JSON format:
     }
 
     async function startListening() {
+      if (isProcessing) {
+        setStatus('thinking', '上一轮还在处理，请稍等…');
+        return;
+      }
+
       if (!SpeechRecognition) {
         alert('当前浏览器不支持 SpeechRecognition。请使用最新版 Chrome 或 Edge。');
         return;
@@ -778,6 +798,8 @@ JSON format:
 
     async function stopListening(reason = 'manual') {
       if (!isListening) return;
+      if (isProcessing) return;
+      isProcessing = true;
       isListening = false;
       clearTimeout(silenceTimer);
       clearInterval(meterTimer);
@@ -796,10 +818,12 @@ JSON format:
 
       if (!text) {
         setStatus('', '没有识别到内容');
+        isProcessing = false;
         return;
       }
 
       await askLocalLLM(text);
+      isProcessing = false;
     }
 
     function extractJsonObject(text) {
@@ -884,14 +908,18 @@ Create a fresh response for this exact transcript.` }
         turns.push({ raw: userSpeechText, corrected, reply, note, at: new Date().toLocaleTimeString() });
         renderHistory();
         saveSettings();
-
-        if (reply) await speak(reply);
+        if (reply) {
+          // Do not block the next recording on speech synthesis completion.
+          speak(reply);
+        }
         setStatus('', '完成');
       } catch (e) {
         console.error(e);
         setStatus('error', '调用本地 LLM 失败');
         setBox(correctedText, userSpeechText, '调用失败。');
         setBox(replyText, '调用本地 LLM 失败：\n' + (e.message || e), '调用失败。');
+      } finally {
+        isProcessing = false;
       }
     }
 
