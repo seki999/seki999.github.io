@@ -469,27 +469,27 @@
             <label for="systemPrompt">基础提示词</label>
             <textarea id="systemPrompt">You are a friendly English vocabulary speaking tutor.
 
-The user is practicing ONE new English word by voice. The additional prompt contains only the target word.
+The user is practicing one English word by voice.
+The target word is provided separately as TARGET_WORD.
 
-Your job is to help the user understand and use that target word through short spoken conversation.
+Your job is to help the user understand and use TARGET_WORD through short spoken conversation.
 
 Rules:
-1. Treat the additional prompt as the target word.
-2. Focus only on that one target word.
-3. If the user's transcript asks for the meaning, explain the target word simply.
-4. If the user asks for an example, give one natural example sentence.
-5. If the user tries to make a sentence, lightly correct it and continue the conversation.
-6. Keep your English reply short, natural, and easy to speak aloud: usually 1-2 sentences.
-7. Ask one simple follow-up question that encourages the user to use the target word.
-8. Do not list other vocabulary words.
-9. Do not repeat the same explanation every turn.
-10. Return strict JSON only. No markdown. No extra text.
+1. Always focus on TARGET_WORD.
+2. If the transcript says "this word", "the word", "first word", or "new word", it means TARGET_WORD.
+3. If speech recognition seems to mishear TARGET_WORD, still use TARGET_WORD.
+4. If the user asks for the meaning, explain TARGET_WORD simply.
+5. If the user asks for an example, give one natural example sentence using TARGET_WORD.
+6. If the user tries to make a sentence, lightly correct it and continue the conversation.
+7. Keep your English reply short: 1-2 sentences.
+8. Ask one simple follow-up question that encourages the user to use TARGET_WORD.
+9. Return strict JSON only. No markdown. No extra text.
 
 JSON format:
 {
   "corrected": "natural version of what the user probably meant",
-  "reply": "short spoken English reply focused on the target word",
-  "note_cn": "short Chinese note explaining the target word or the user's sentence"
+  "reply": "short spoken English reply focused on TARGET_WORD",
+  "note_cn": "short Chinese note explaining TARGET_WORD or the user's sentence"
 }</textarea>
           </div>
 
@@ -666,8 +666,6 @@ JSON format:
         utter.onend = finish;
         utter.onerror = finish;
 
-        // Some browsers occasionally fail to fire onend after cancel/start cycles.
-        // This fallback prevents the app from getting stuck after the first reply.
         const fallbackMs = Math.max(5000, text.length * 120);
         setTimeout(finish, fallbackMs);
 
@@ -793,7 +791,17 @@ JSON format:
       setStatus('listening', '正在听你说英语…');
       startMeter();
       resetSilenceTimer();
-      recognition.start();
+
+      try {
+        recognition.start();
+      } catch (e) {
+        isListening = false;
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        micCircle.classList.remove('active');
+        setStatus('error', '语音识别启动失败');
+        console.error(e);
+      }
     }
 
     async function stopListening(reason = 'manual') {
@@ -837,6 +845,13 @@ JSON format:
       return null;
     }
 
+    function getTargetWord() {
+      return extraPrompt.value
+        .trim()
+        .split(/[\s,，、\n]+/)
+        .filter(Boolean)[0] || '';
+    }
+
     async function askLocalLLM(userSpeechText) {
       setStatus('thinking', '正在调用本地 LLM…');
       setBox(correctedText, '', '本地 LLM 正在矫正…');
@@ -846,18 +861,41 @@ JSON format:
       const model = modelInput.value.trim() || 'local-model';
       const apiKey = apiKeyInput.value;
       const temperature = Number(temperatureInput.value) || 0.4;
+      const targetWord = getTargetWord();
 
       const messages = [
         { role: 'system', content: systemPrompt.value.trim() },
-        { role: 'system', content: extraPrompt.value.trim() },
         {
           role: 'system',
-          content: 'Hard rules: Answer the CURRENT transcript only. Do not reuse or copy any previous answer. Return one valid JSON object only. Never output text like Previous corrected, Previous reply, The target words are, or I hope this helps. Keep reply fresh and specific to the current transcript.'
+          content: `TARGET_WORD: ${targetWord}
+
+The TARGET_WORD is the single English word the user wants to practice.
+The TARGET_WORD is authoritative.
+
+Important:
+- If the speech-recognition transcript says "this word", "the word", "first word", or "new word", it means TARGET_WORD.
+- If the transcript contains a strange word that sounds similar to TARGET_WORD, assume the user probably meant TARGET_WORD.
+- Do not switch to another vocabulary word unless the user clearly says a different English word.
+- Focus the conversation on TARGET_WORD.`
         },
-        { role: 'user', content: `CURRENT transcript only:
+        {
+          role: 'system',
+          content: `Hard rules:
+1. Answer the CURRENT transcript only.
+2. Do not reuse or copy previous answers.
+3. Return one valid JSON object only.
+4. Never output labels like Previous corrected, Previous reply, The target words are, or I hope this helps.
+5. Keep the reply fresh and specific to the current transcript.
+6. If speech recognition seems wrong, use TARGET_WORD as the vocabulary word being practiced.`
+        },
+        {
+          role: 'user',
+          content: `CURRENT transcript only:
 ${userSpeechText}
 
-Create a fresh response for this exact transcript.` }
+Create a fresh response.
+Use TARGET_WORD as the vocabulary word being practiced.`
+        }
       ];
 
       try {
@@ -871,7 +909,7 @@ Create a fresh response for this exact transcript.` }
             model,
             messages,
             temperature,
-            max_tokens: 80,
+            max_tokens: 120,
             stream: false
           })
         });
@@ -908,8 +946,8 @@ Create a fresh response for this exact transcript.` }
         turns.push({ raw: userSpeechText, corrected, reply, note, at: new Date().toLocaleTimeString() });
         renderHistory();
         saveSettings();
+
         if (reply) {
-          // Do not block the next recording on speech synthesis completion.
           speak(reply);
         }
         setStatus('', '完成');
@@ -950,7 +988,7 @@ Create a fresh response for this exact transcript.` }
     }
 
     async function testLLM() {
-      await askLocalLLM('Hello, I want practice English speaking every day.');
+      await askLocalLLM('Can you explain this word?');
     }
 
     startBtn.addEventListener('click', startListening);
