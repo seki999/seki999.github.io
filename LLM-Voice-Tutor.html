@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LLM Voice Tutor - Local English Speaking Coach</title>
+  <title>LLM Voice Tutor - Vocabulary Practice</title>
   <style>
     :root {
       --bg: #0b1020;
-      --panel: #111832;
-      --panel-2: #151e3d;
       --text: #eaf0ff;
       --muted: #91a4c7;
       --accent: #5b8cff;
@@ -34,10 +32,7 @@
         var(--bg);
     }
 
-    .app {
-      width: min(1280px, 96vw);
-      margin: 28px auto 48px;
-    }
+    .app { width: min(1280px, 96vw); margin: 28px auto 48px; }
 
     header {
       display: flex;
@@ -47,17 +42,8 @@
       margin-bottom: 18px;
     }
 
-    .title h1 {
-      margin: 0 0 6px;
-      font-size: clamp(24px, 3vw, 38px);
-      letter-spacing: .3px;
-    }
-
-    .title p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
+    .title h1 { margin: 0 0 6px; font-size: clamp(24px, 3vw, 38px); letter-spacing: .3px; }
+    .title p { margin: 0; color: var(--muted); font-size: 14px; }
 
     .status {
       display: inline-flex;
@@ -72,23 +58,15 @@
     }
 
     .dot {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      background: #64748b;
-      box-shadow: 0 0 0 5px rgba(100,116,139,.12);
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #64748b; box-shadow: 0 0 0 5px rgba(100,116,139,.12);
     }
-
     .dot.listening { background: var(--accent-2); box-shadow: 0 0 0 5px rgba(24,201,100,.14); }
     .dot.thinking { background: var(--warn); box-shadow: 0 0 0 5px rgba(255,176,32,.14); }
     .dot.speaking { background: var(--accent); box-shadow: 0 0 0 5px rgba(91,140,255,.16); }
     .dot.error { background: var(--danger); box-shadow: 0 0 0 5px rgba(255,93,93,.14); }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 1.08fr .92fr;
-      gap: 18px;
-    }
+    .layout { display: grid; grid-template-columns: 1.08fr .92fr; gap: 18px; }
 
     .card {
       background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
@@ -108,20 +86,11 @@
     }
 
     .card-header h2 {
-      margin: 0;
-      font-size: 14px;
-      color: #c8d6f5;
-      letter-spacing: .6px;
-      text-transform: uppercase;
+      margin: 0; font-size: 14px; color: #c8d6f5;
+      letter-spacing: .6px; text-transform: uppercase;
     }
 
     .card-body { padding: 16px; }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
 
     .listen-box {
       padding: 24px;
@@ -129,19 +98,15 @@
       border-radius: 20px;
       background: linear-gradient(145deg, rgba(91,140,255,.14), rgba(24,201,100,.08));
       text-align: center;
+      margin-bottom: 14px;
     }
 
     .mic-circle {
-      width: 118px;
-      height: 118px;
-      margin: 0 auto 14px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
+      width: 118px; height: 118px; margin: 0 auto 14px; border-radius: 50%;
+      display: grid; place-items: center;
       background: linear-gradient(180deg, #6b93ff, #4b70ff);
       box-shadow: 0 22px 55px rgba(91,140,255,.35);
-      font-size: 48px;
-      transition: transform .18s ease, filter .2s ease;
+      font-size: 48px; transition: transform .18s ease, filter .2s ease;
     }
 
     .mic-circle.active {
@@ -156,46 +121,29 @@
       100% { box-shadow: 0 0 0 0 rgba(24,201,100,0), 0 22px 55px rgba(91,140,255,.35); }
     }
 
-    .listen-box h3 {
-      margin: 0 0 8px;
-      font-size: 22px;
-    }
-
-    .listen-box p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.55;
-    }
+    .listen-box h3 { margin: 0 0 8px; font-size: 22px; }
+    .listen-box p { margin: 0; color: var(--muted); line-height: 1.55; }
 
     .controls {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
+      display: flex; justify-content: center; flex-wrap: wrap;
+      gap: 10px; margin-top: 18px;
     }
 
-    button, input, textarea, select {
-      font: inherit;
-    }
+    button, input, textarea, select { font: inherit; }
 
     .btn {
-      border: none;
-      border-radius: 999px;
-      padding: 11px 18px;
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
+      border: none; border-radius: 999px; padding: 11px 18px;
+      color: #fff; font-weight: 700; cursor: pointer;
       background: linear-gradient(180deg, #6b93ff, #4a6fff);
       box-shadow: 0 12px 28px rgba(0,0,0,.28);
       transition: transform .08s ease, filter .18s ease, opacity .18s ease;
     }
-
     .btn:hover { filter: brightness(1.06); }
     .btn:active { transform: translateY(1px); }
     .btn:disabled { opacity: .52; cursor: not-allowed; }
     .btn.secondary { background: linear-gradient(180deg, #2d375f, #222a4f); color: #dce6ff; }
     .btn.success { background: linear-gradient(180deg, #29d47e, #14ad64); }
+    .btn.warn { background: linear-gradient(180deg, #ffc857, #ff9c2f); color: #1f1f1f; }
     .btn.danger { background: linear-gradient(180deg, #ff7878, #ed4646); }
 
     .field { margin-bottom: 13px; }
@@ -219,140 +167,68 @@
       transition: border-color .18s ease, box-shadow .18s ease;
     }
 
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-      line-height: 1.55;
-    }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.55; }
 
     input:focus, textarea:focus, select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 4px rgba(91,140,255,.16);
     }
 
-    select option {
-      background: #172143;
-      color: #fff;
-    }
+    select option { background: #172143; color: #fff; }
 
-    .hint {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
     .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 6px 10px;
-      color: var(--muted);
-      background: rgba(255,255,255,.055);
-      border: 1px solid var(--border);
-      font-size: 12px;
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 999px; padding: 6px 10px;
+      color: var(--muted); background: rgba(255,255,255,.055);
+      border: 1px solid var(--border); font-size: 12px;
     }
 
-    .transcript-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 13px;
-    }
+    .message-grid { display: grid; grid-template-columns: 1fr; gap: 13px; }
 
     .message-box {
-      padding: 14px;
-      border-radius: 15px;
+      padding: 14px; border-radius: 15px;
       border: 1px solid rgba(255,255,255,.095);
       background: rgba(255,255,255,.04);
     }
 
     .message-title {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 9px;
-      color: #c7d5f2;
-      font-size: 13px;
-      font-weight: 750;
+      display: flex; justify-content: space-between; gap: 8px; align-items: center;
+      margin-bottom: 9px; color: #c7d5f2; font-size: 13px; font-weight: 750;
     }
 
     .message-content {
-      min-height: 54px;
-      white-space: pre-wrap;
-      line-height: 1.62;
-      color: #eef4ff;
+      min-height: 54px; white-space: pre-wrap; line-height: 1.62; color: #eef4ff;
+    }
+    .message-content.empty { color: #879abd; }
+
+    .meter {
+      height: 9px; border-radius: 999px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      margin-top: 12px;
+    }
+    .meter > div {
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, #18c964, #5b8cff);
+      transition: width .12s ease;
     }
 
-    .message-content.empty {
-      color: #879abd;
-    }
-
-    .history {
-      display: grid;
-      gap: 12px;
-      max-height: 560px;
-      overflow: auto;
-      padding-right: 3px;
-    }
-
+    .history { display: grid; gap: 12px; max-height: 520px; overflow: auto; padding-right: 3px; }
     .history-item {
       border: 1px solid rgba(255,255,255,.09);
       background: rgba(255,255,255,.035);
       border-radius: 15px;
       padding: 12px;
-    }
-
-    .history-item .user {
-      color: #dce7ff;
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-
-    .history-item .assistant {
-      color: #d8ffe9;
-      line-height: 1.5;
-    }
-
-    .footer-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .mini-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
-
-    .meter {
-      height: 9px;
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      margin-top: 12px;
-    }
-
-    .meter > div {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, #18c964, #5b8cff);
-      transition: width .12s ease;
+      line-height: 1.55;
     }
 
     @media (max-width: 980px) {
       header { align-items: flex-start; flex-direction: column; }
       .layout { grid-template-columns: 1fr; }
-      .row, .mini-grid { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -361,7 +237,7 @@
     <header>
       <div class="title">
         <h1>LLM Voice Tutor</h1>
-        <p>本地 HTML 英语口语练习：浏览器语音识别 → 本地 LLM 矫正与回答 → 浏览器朗读</p>
+        <p>新单词解释 + 口语造句练习：本地 LLM + 浏览器语音识别/朗读</p>
       </div>
       <div class="status" aria-live="polite">
         <span class="dot" id="statusDot"></span>
@@ -372,27 +248,37 @@
     <div class="layout">
       <main class="card">
         <div class="card-header">
-          <h2>Speaking Practice</h2>
+          <h2>Practice</h2>
           <span class="pill" id="silenceHint">静音 5 秒自动停止</span>
         </div>
-        <div class="card-body hero">
+        <div class="card-body">
           <section class="listen-box">
             <div class="mic-circle" id="micCircle">🎙️</div>
-            <h3 id="mainPrompt">按下按钮开始说英语</h3>
-            <p>说完后保持安静 5 秒，系统会自动停止识别，然后调用本地 LLM 进行英文修正并给出自然回答。</p>
-            <div class="meter" title="识别中会根据声音事件变化，部分浏览器可能不支持实时音量。"><div id="listenMeter"></div></div>
+            <h3 id="mainPrompt">选择单词后开始练习</h3>
+            <p id="modeText">先点击「单词解释」了解单词，或点击「口语练习」让 LLM 出例句，然后你再造句。</p>
+            <div class="meter"><div id="listenMeter"></div></div>
             <div class="controls">
-              <button class="btn success" id="startBtn">开始语音输入</button>
+              <button class="btn warn" id="explainBtn">单词解释</button>
+              <button class="btn success" id="practiceBtn">口语练习</button>
+              <button class="btn" id="startBtn" disabled>开始语音输入</button>
               <button class="btn danger" id="stopBtn" disabled>停止</button>
-              <button class="btn secondary" id="speakAgainBtn" disabled>重新朗读回答</button>
+              <button class="btn secondary" id="speakAgainBtn" disabled>重新朗读</button>
               <button class="btn secondary" id="clearBtn">清空</button>
             </div>
           </section>
 
-          <section class="transcript-grid">
+          <section class="message-grid">
             <div class="message-box">
               <div class="message-title">
-                <span>你的原始识别文本</span>
+                <span>当前单词 / 模式</span>
+                <span class="pill" id="modePill">Idle</span>
+              </div>
+              <div id="currentWordText" class="message-content empty">请选择一个单词。</div>
+            </div>
+
+            <div class="message-box">
+              <div class="message-title">
+                <span>你的语音识别文本</span>
                 <span class="pill">SpeechRecognition</span>
               </div>
               <div id="rawText" class="message-content empty">还没有语音输入。</div>
@@ -400,18 +286,18 @@
 
             <div class="message-box">
               <div class="message-title">
-                <span>LLM 矫正后的英文</span>
-                <span class="pill">Correction</span>
+                <span>LLM 输出</span>
+                <span class="pill">Tutor</span>
               </div>
-              <div id="correctedText" class="message-content empty">等待本地 LLM 返回。</div>
+              <div id="replyText" class="message-content empty">回答会显示在这里，并自动朗读出来。</div>
             </div>
 
             <div class="message-box">
               <div class="message-title">
-                <span>LLM 回答</span>
-                <span class="pill">Tutor Reply + TTS</span>
+                <span>修正 / 说明</span>
+                <span class="pill">Feedback</span>
               </div>
-              <div id="replyText" class="message-content empty">回答会显示在这里，并自动朗读出来。</div>
+              <div id="feedbackText" class="message-content empty">你的造句修正会显示在这里。</div>
             </div>
           </section>
         </div>
@@ -419,20 +305,20 @@
 
       <aside class="card">
         <div class="card-header">
-          <h2>Local LLM Settings</h2>
+          <h2>Settings</h2>
           <button class="btn secondary" id="saveSettingsBtn">保存设置</button>
         </div>
         <div class="card-body">
           <div class="field">
             <label for="endpointInput">本地 LLM API 地址</label>
             <input id="endpointInput" type="text" value="http://localhost:1234/v1/chat/completions" />
-            <div class="hint">默认兼容 LM Studio 的 OpenAI-compatible API。Ollama 也可以通过 OpenAI-compatible 地址使用，例如 /v1/chat/completions。</div>
+            <div class="hint">LM Studio 默认通常是这个地址。</div>
           </div>
 
           <div class="row">
             <div class="field">
               <label for="modelInput">模型名</label>
-              <input id="modelInput" type="text" value="qwen2.5-1.5b-instruct-unsloth-bnb-thinker" placeholder="例如 qwen2.5-7b-instruct" />
+              <input id="modelInput" type="text" value="qwen2.5-1.5b-instruct-unsloth-bnb-thinker" />
             </div>
             <div class="field">
               <label for="apiKeyInput">API Key，可空</label>
@@ -440,7 +326,7 @@
             </div>
           </div>
 
-          <div class="mini-grid">
+          <div class="row">
             <div class="field">
               <label for="languageSelect">识别语言</label>
               <select id="languageSelect">
@@ -454,52 +340,50 @@
               <label for="silenceSeconds">静音停止秒数</label>
               <input id="silenceSeconds" type="number" min="2" max="15" step="1" value="5" />
             </div>
+          </div>
+
+          <div class="row">
             <div class="field">
               <label for="temperatureInput">Temperature</label>
-              <input id="temperatureInput" type="number" min="0" max="2" step="0.1" value="0.4" />
+              <input id="temperatureInput" type="number" min="0" max="2" step="0.1" value="0.3" />
+            </div>
+            <div class="field">
+              <label for="voiceSelect">朗读声音</label>
+              <select id="voiceSelect"></select>
             </div>
           </div>
 
           <div class="field">
-            <label for="voiceSelect">朗读声音</label>
-            <select id="voiceSelect"></select>
+            <label for="wordListInput">新单词列表</label>
+            <textarea id="wordListInput" placeholder="一次可以粘贴多个单词，例如：
+reluctant
+compromise
+eventually">reluctant
+compromise
+eventually
+practical
+wreak
+appall
+balk
+blemish
+allude
+backlash</textarea>
+            <div class="hint">可以每行一个，也可以用逗号、空格、顿号分隔。</div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="wordSelect">当前练习单词</label>
+              <select id="wordSelect"></select>
+            </div>
+            <div class="field" style="display:flex; align-items:flex-end;">
+              <button class="btn secondary" id="updateWordListBtn" type="button" style="width:100%;">更新单词列表</button>
+            </div>
           </div>
 
           <div class="field">
-            <label for="systemPrompt">基础提示词</label>
-            <textarea id="systemPrompt">You are a friendly English vocabulary speaking tutor.
-
-The user is practicing one English word by voice.
-The target word is provided separately as TARGET_WORD.
-
-Your job is to help the user understand and use TARGET_WORD through short spoken conversation.
-
-Rules:
-1. Always focus on TARGET_WORD.
-2. If the transcript says "this word", "the word", "first word", or "new word", it means TARGET_WORD.
-3. If speech recognition seems to mishear TARGET_WORD, still use TARGET_WORD.
-4. If the user asks for the meaning, explain TARGET_WORD simply.
-5. If the user asks for an example, give one natural example sentence using TARGET_WORD.
-6. If the user tries to make a sentence, lightly correct it and continue the conversation.
-7. Keep your English reply short: 1-2 sentences.
-8. Ask one simple follow-up question that encourages the user to use TARGET_WORD.
-9. Return strict JSON only. No markdown. No extra text.
-
-JSON format:
-{
-  "corrected": "natural version of what the user probably meant",
-  "reply": "short spoken English reply focused on TARGET_WORD",
-  "note_cn": "short Chinese note explaining TARGET_WORD or the user's sentence"
-}</textarea>
-          </div>
-
-          <div class="field">
-            <label for="extraPrompt">追加提示词 / 练习主题</label>
-            <textarea id="extraPrompt" placeholder="这里只写一个新单词，例如：reluctant">reluctant</textarea>
-          </div>
-
-          <div class="footer-actions">
-            <button class="btn secondary" id="testLLMBtn">测试 LLM</button>
+            <label for="extraInstructionInput">补充要求，可空</label>
+            <textarea id="extraInstructionInput" placeholder="例如：回答简单一点；例句偏商务场景。">Please keep explanations simple and suitable for spoken English practice.</textarea>
           </div>
         </div>
       </aside>
@@ -507,7 +391,7 @@ JSON format:
 
     <section class="card" style="margin-top:18px;">
       <div class="card-header">
-        <h2>Conversation History</h2>
+        <h2>History</h2>
         <span class="pill" id="historyCount">0 turns</span>
       </div>
       <div class="card-body">
@@ -523,13 +407,18 @@ JSON format:
     const statusText = qs('#statusText');
     const micCircle = qs('#micCircle');
     const listenMeter = qs('#listenMeter');
+    const explainBtn = qs('#explainBtn');
+    const practiceBtn = qs('#practiceBtn');
     const startBtn = qs('#startBtn');
     const stopBtn = qs('#stopBtn');
     const speakAgainBtn = qs('#speakAgainBtn');
     const clearBtn = qs('#clearBtn');
     const rawText = qs('#rawText');
-    const correctedText = qs('#correctedText');
     const replyText = qs('#replyText');
+    const feedbackText = qs('#feedbackText');
+    const currentWordText = qs('#currentWordText');
+    const modePill = qs('#modePill');
+    const modeText = qs('#modeText');
     const historyEl = qs('#history');
     const historyCount = qs('#historyCount');
     const mainPrompt = qs('#mainPrompt');
@@ -542,10 +431,11 @@ JSON format:
     const silenceSeconds = qs('#silenceSeconds');
     const temperatureInput = qs('#temperatureInput');
     const voiceSelect = qs('#voiceSelect');
-    const systemPrompt = qs('#systemPrompt');
-    const extraPrompt = qs('#extraPrompt');
+    const wordListInput = qs('#wordListInput');
+    const wordSelect = qs('#wordSelect');
+    const updateWordListBtn = qs('#updateWordListBtn');
+    const extraInstructionInput = qs('#extraInstructionInput');
     const saveSettingsBtn = qs('#saveSettingsBtn');
-    const testLLMBtn = qs('#testLLMBtn');
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const synth = window.speechSynthesis;
@@ -557,7 +447,9 @@ JSON format:
     let meterTimer = null;
     let finalTranscript = '';
     let interimTranscript = '';
-    let lastReply = '';
+    let lastSpeakText = '';
+    let selectedTargetWord = '';
+    let currentMode = 'idle';
     let turns = [];
     let voices = [];
 
@@ -581,16 +473,17 @@ JSON format:
         silenceSeconds: silenceSeconds.value,
         temperature: temperatureInput.value,
         voiceURI: voiceSelect.value,
-        systemPrompt: systemPrompt.value,
-        extraPrompt: extraPrompt.value
+        wordList: wordListInput.value,
+        selectedTargetWord,
+        extraInstruction: extraInstructionInput.value
       };
-      localStorage.setItem('llmVoiceTutorSettings', JSON.stringify(data));
+      localStorage.setItem('llmVoiceTutorSettingsVocab', JSON.stringify(data));
       setStatus('', '设置已保存');
     }
 
     function loadSettings() {
       try {
-        const raw = localStorage.getItem('llmVoiceTutorSettings');
+        const raw = localStorage.getItem('llmVoiceTutorSettingsVocab');
         if (!raw) return;
         const data = JSON.parse(raw);
         endpointInput.value = data.endpoint || endpointInput.value;
@@ -599,12 +492,66 @@ JSON format:
         languageSelect.value = data.lang || languageSelect.value;
         silenceSeconds.value = data.silenceSeconds || silenceSeconds.value;
         temperatureInput.value = data.temperature || temperatureInput.value;
-        systemPrompt.value = data.systemPrompt || systemPrompt.value;
-        extraPrompt.value = data.extraPrompt || extraPrompt.value;
+        wordListInput.value = data.wordList || wordListInput.value;
+        selectedTargetWord = data.selectedTargetWord || '';
+        extraInstructionInput.value = data.extraInstruction || extraInstructionInput.value;
         voiceSelect.dataset.savedVoiceURI = data.voiceURI || '';
       } catch (e) {
         console.warn('Failed to load settings:', e);
       }
+    }
+
+    function parseWordList() {
+      return wordListInput.value
+        .replaceAll(',', ' ')
+        .replaceAll('，', ' ')
+        .replaceAll('、', ' ')
+        .replaceAll(';', ' ')
+        .replaceAll('；', ' ')
+        .replaceAll('\n', ' ')
+        .split(/\s+/)
+        .map(w => w.trim())
+        .filter(Boolean)
+        .filter((w, i, arr) => arr.indexOf(w) === i)
+        .slice(0, 100);
+    }
+
+    function refreshWordSelect() {
+      const words = parseWordList();
+      const previous = selectedTargetWord || wordSelect.value;
+      wordSelect.innerHTML = '';
+
+      if (words.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '请先输入新单词';
+        wordSelect.appendChild(opt);
+        selectedTargetWord = '';
+        updateCurrentWordUI();
+        return;
+      }
+
+      for (const word of words) {
+        const opt = document.createElement('option');
+        opt.value = word;
+        opt.textContent = word;
+        wordSelect.appendChild(opt);
+      }
+
+      wordSelect.value = words.includes(previous) ? previous : words[0];
+      selectedTargetWord = wordSelect.value;
+      updateCurrentWordUI();
+    }
+
+    function getTargetWord() {
+      if (!selectedTargetWord) refreshWordSelect();
+      return selectedTargetWord || wordSelect.value || parseWordList()[0] || '';
+    }
+
+    function updateCurrentWordUI() {
+      const word = getTargetWord();
+      setBox(currentWordText, word ? `当前练习单词：${word}` : '', '请选择一个单词。');
+      mainPrompt.textContent = word ? `当前单词：${word}` : '选择单词后开始练习';
     }
 
     function populateVoices() {
@@ -627,12 +574,12 @@ JSON format:
         return;
       }
 
-      englishVoices.forEach(v => {
+      for (const v of englishVoices) {
         const opt = document.createElement('option');
         opt.value = v.voiceURI;
         opt.textContent = `${v.name} — ${v.lang}${v.default ? ' (默认)' : ''}`;
         voiceSelect.appendChild(opt);
-      });
+      }
 
       const saved = voiceSelect.dataset.savedVoiceURI;
       const preferred = englishVoices.find(v => v.voiceURI === saved)
@@ -644,6 +591,7 @@ JSON format:
     }
 
     function speak(text) {
+      lastSpeakText = text || lastSpeakText;
       return new Promise((resolve) => {
         if (!synth || !text) return resolve();
         try { synth.cancel(); } catch (e) {}
@@ -662,15 +610,191 @@ JSON format:
         utter.lang = selected ? selected.lang : languageSelect.value;
         utter.rate = 0.88;
         utter.pitch = 1;
-        utter.onstart = () => setStatus('speaking', '正在朗读回答…');
+        utter.onstart = () => setStatus('speaking', '正在朗读…');
         utter.onend = finish;
         utter.onerror = finish;
-
-        const fallbackMs = Math.max(5000, text.length * 120);
-        setTimeout(finish, fallbackMs);
-
+        setTimeout(finish, Math.max(5000, text.length * 120));
         synth.speak(utter);
       });
+    }
+
+    function extractJsonObject(text) {
+      const trimmed = (text || '').trim();
+      try { return JSON.parse(trimmed); } catch (e) {}
+      const match = trimmed.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { return JSON.parse(match[0]); } catch (e) {}
+      }
+      return null;
+    }
+
+    async function callLocalLLM(task, userSentence = '') {
+      const targetWord = getTargetWord();
+      if (!targetWord) {
+        alert('请先输入并选择一个单词。');
+        return null;
+      }
+
+      setStatus('thinking', '正在调用本地 LLM…');
+
+      const endpoint = endpointInput.value.trim();
+      const model = modelInput.value.trim() || 'local-model';
+      const apiKey = apiKeyInput.value;
+      const temperature = Number(temperatureInput.value) || 0.3;
+      const extra = extraInstructionInput.value.trim();
+
+      let systemContent = '';
+      let userContent = '';
+
+      if (task === 'explain') {
+        systemContent = `You are a friendly English vocabulary tutor.
+Explain the TARGET_WORD for a Chinese learner.
+Return strict JSON only.
+
+JSON format:
+{
+  "word": "TARGET_WORD",
+  "meaning_cn": "Chinese meaning",
+  "part_of_speech_cn": "part of speech in Chinese",
+  "usage_cn": "short Chinese usage explanation",
+  "example_en": "one short English example sentence",
+  "example_cn": "Chinese translation of the example",
+  "speak": "short spoken English explanation suitable for TTS"
+}`;
+        userContent = `TARGET_WORD: ${targetWord}
+Extra instruction: ${extra}`;
+      } else if (task === 'practiceStart') {
+        systemContent = `You are a friendly English speaking tutor.
+Create one short natural example sentence using TARGET_WORD.
+Also give its Chinese meaning.
+Then ask the user to make their own sentence using TARGET_WORD.
+Return strict JSON only.
+
+JSON format:
+{
+  "example_en": "one short natural sentence using TARGET_WORD",
+  "example_cn": "Chinese meaning of the sentence",
+  "prompt_en": "ask the user to make their own sentence using TARGET_WORD",
+  "speak": "spoken message including the example and asking the user to try"
+}`;
+        userContent = `TARGET_WORD: ${targetWord}
+Extra instruction: ${extra}`;
+      } else if (task === 'correctSentence') {
+        systemContent = `You are a friendly English sentence correction tutor.
+The user is practicing TARGET_WORD.
+The speech-recognition transcript may mishear TARGET_WORD.
+If the user's transcript says "this word", "the word", or has a similar-sounding wrong word, understand it as TARGET_WORD.
+Correct the user's sentence naturally.
+Give a short Chinese explanation.
+Then ask the user one simple follow-up question using TARGET_WORD.
+Return strict JSON only.
+
+JSON format:
+{
+  "corrected": "corrected natural English sentence using TARGET_WORD if possible",
+  "feedback_cn": "short Chinese correction explanation",
+  "reply": "short English response and one follow-up question",
+  "speak": "spoken English response suitable for TTS"
+}`;
+        userContent = `TARGET_WORD: ${targetWord}
+User speech-recognition transcript:
+${userSentence}
+
+Extra instruction: ${extra}`;
+      }
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey.trim()) headers.Authorization = `Bearer ${apiKey.trim()}`;
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemContent },
+              { role: 'user', content: userContent }
+            ],
+            temperature,
+            max_tokens: 180,
+            stream: false
+          })
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content || '';
+        const json = extractJsonObject(content);
+        return json || { speak: content, raw: content };
+      } catch (e) {
+        console.error(e);
+        setStatus('error', '调用本地 LLM 失败');
+        setBox(replyText, '调用本地 LLM 失败：\n' + (e.message || e), '调用失败。');
+        return null;
+      } finally {
+        setStatus('', '就绪');
+      }
+    }
+
+    async function explainWord() {
+      if (isProcessing) return;
+      isProcessing = true;
+      currentMode = 'explain';
+      modePill.textContent = 'Explain';
+      modeText.textContent = '正在讲解单词。';
+      setBox(rawText, '', '此模式不需要语音输入。');
+      setBox(replyText, '', '正在生成单词解释…');
+      setBox(feedbackText, '', '正在生成用法说明…');
+
+      const result = await callLocalLLM('explain');
+      if (result) {
+        const text =
+`单词：${result.word || getTargetWord()}
+汉语意思：${result.meaning_cn || ''}
+词性：${result.part_of_speech_cn || ''}
+用法：${result.usage_cn || ''}
+例句：${result.example_en || ''}
+例句中文：${result.example_cn || ''}`;
+        setBox(replyText, text, '没有返回解释。');
+        setBox(feedbackText, result.usage_cn || '', '没有返回说明。');
+        const speakText = result.speak || `${result.word || getTargetWord()}. ${result.example_en || ''}`;
+        turns.push({ mode: '解释', word: getTargetWord(), user: '', tutor: text, at: new Date().toLocaleTimeString() });
+        renderHistory();
+        speak(speakText);
+      }
+      isProcessing = false;
+    }
+
+    async function startPractice() {
+      if (isProcessing) return;
+      isProcessing = true;
+      currentMode = 'practiceWaitUserSentence';
+      modePill.textContent = 'Practice';
+      modeText.textContent = 'LLM 会先造句并给出中文意思，然后请你按「开始语音输入」造句。';
+      setBox(rawText, '', '等待你稍后造句。');
+      setBox(replyText, '', '正在生成练习例句…');
+      setBox(feedbackText, '', '请听完例句后自己造句。');
+
+      const result = await callLocalLLM('practiceStart');
+      if (result) {
+        const text =
+`LLM 例句：${result.example_en || ''}
+中文意思：${result.example_cn || ''}
+练习要求：${result.prompt_en || 'Please make your own sentence.'}`;
+        setBox(replyText, text, '没有返回例句。');
+        setBox(feedbackText, '现在请点击「开始语音输入」，用这个单词造一个英文句子。', '等待造句。');
+        startBtn.disabled = false;
+        const speakText = result.speak || `${result.example_en || ''} Now please make your own sentence.`;
+        turns.push({ mode: '口语练习开始', word: getTargetWord(), user: '', tutor: text, at: new Date().toLocaleTimeString() });
+        renderHistory();
+        speak(speakText);
+      }
+      isProcessing = false;
     }
 
     function resetSilenceTimer() {
@@ -699,47 +823,26 @@ JSON format:
 
     function initRecognition() {
       if (!SpeechRecognition) return null;
-
       const rec = new SpeechRecognition();
       rec.lang = languageSelect.value || 'en-US';
       rec.continuous = true;
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
-      rec.onaudiostart = () => {
-        resetSilenceTimer();
-      };
-
-      rec.onsoundstart = () => {
-        resetSilenceTimer();
-        setStatus('listening', '检测到声音，正在识别…');
-      };
-
-      rec.onspeechstart = () => {
-        resetSilenceTimer();
-        setStatus('listening', '正在听你说英语…');
-      };
-
-      rec.onspeechend = () => {
-        resetSilenceTimer();
-        setStatus('listening', '等待是否继续说话…');
-      };
+      rec.onaudiostart = resetSilenceTimer;
+      rec.onsoundstart = () => { resetSilenceTimer(); setStatus('listening', '检测到声音，正在识别…'); };
+      rec.onspeechstart = () => { resetSilenceTimer(); setStatus('listening', '正在听你说英语…'); };
+      rec.onspeechend = () => { resetSilenceTimer(); setStatus('listening', '等待是否继续说话…'); };
 
       rec.onresult = (event) => {
         resetSilenceTimer();
         interimTranscript = '';
-
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript || '';
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript.trim() + ' ';
-          } else {
-            interimTranscript += transcript;
-          }
+          if (event.results[i].isFinal) finalTranscript += transcript.trim() + ' ';
+          else interimTranscript += transcript;
         }
-
-        const visible = (finalTranscript + interimTranscript).trim();
-        setBox(rawText, visible, '正在等待语音识别结果…');
+        setBox(rawText, (finalTranscript + interimTranscript).trim(), '正在等待语音识别结果…');
       };
 
       rec.onerror = (e) => {
@@ -750,11 +853,7 @@ JSON format:
 
       rec.onend = () => {
         if (isListening) {
-          try {
-            rec.start();
-          } catch (e) {
-            console.warn('Recognition restart failed:', e);
-          }
+          try { rec.start(); } catch (e) { console.warn('Recognition restart failed:', e); }
         }
       };
 
@@ -766,35 +865,33 @@ JSON format:
         setStatus('thinking', '上一轮还在处理，请稍等…');
         return;
       }
-
       if (!SpeechRecognition) {
         alert('当前浏览器不支持 SpeechRecognition。请使用最新版 Chrome 或 Edge。');
         return;
       }
+      if (currentMode !== 'practiceWaitUserSentence') {
+        currentMode = 'practiceWaitUserSentence';
+        modePill.textContent = 'Practice';
+      }
 
       try { synth && synth.cancel(); } catch (e) {}
-
       finalTranscript = '';
       interimTranscript = '';
       setBox(rawText, '', '正在等待你说话…');
-      setBox(correctedText, '', '等待本地 LLM 返回。');
-      setBox(replyText, '', '回答会显示在这里，并自动朗读出来。');
-      lastReply = '';
+      setBox(feedbackText, '', '正在等待你的造句…');
 
       recognition = initRecognition();
       isListening = true;
       micCircle.classList.add('active');
       startBtn.disabled = true;
       stopBtn.disabled = false;
-      speakAgainBtn.disabled = true;
-      mainPrompt.textContent = '正在听，请开始说英语';
+      mainPrompt.textContent = `请用 ${getTargetWord()} 造句`;
       setStatus('listening', '正在听你说英语…');
       startMeter();
       resetSilenceTimer();
 
-      try {
-        recognition.start();
-      } catch (e) {
+      try { recognition.start(); }
+      catch (e) {
         isListening = false;
         startBtn.disabled = false;
         stopBtn.disabled = true;
@@ -807,6 +904,7 @@ JSON format:
     async function stopListening(reason = 'manual') {
       if (!isListening) return;
       if (isProcessing) return;
+
       isProcessing = true;
       isListening = false;
       clearTimeout(silenceTimer);
@@ -817,9 +915,7 @@ JSON format:
       stopBtn.disabled = true;
       mainPrompt.textContent = reason === 'silent' ? '检测到静音，已停止输入' : '语音输入已停止';
 
-      try {
-        recognition && recognition.stop();
-      } catch (e) {}
+      try { recognition && recognition.stop(); } catch (e) {}
 
       const text = (finalTranscript + interimTranscript).trim();
       setBox(rawText, text, '没有识别到内容。');
@@ -830,135 +926,23 @@ JSON format:
         return;
       }
 
-      await askLocalLLM(text);
-      isProcessing = false;
-    }
+      setBox(feedbackText, '', '正在修正你的句子…');
+      const result = await callLocalLLM('correctSentence', text);
 
-    function extractJsonObject(text) {
-      const trimmed = (text || '').trim();
-      try { return JSON.parse(trimmed); } catch (e) {}
-
-      const match = trimmed.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { return JSON.parse(match[0]); } catch (e) {}
-      }
-      return null;
-    }
-
-    function getTargetWord() {
-      return extraPrompt.value
-        .trim()
-        .split(/[\s,，、\n]+/)
-        .filter(Boolean)[0] || '';
-    }
-
-    async function askLocalLLM(userSpeechText) {
-      setStatus('thinking', '正在调用本地 LLM…');
-      setBox(correctedText, '', '本地 LLM 正在矫正…');
-      setBox(replyText, '', '本地 LLM 正在生成回答…');
-
-      const endpoint = endpointInput.value.trim();
-      const model = modelInput.value.trim() || 'local-model';
-      const apiKey = apiKeyInput.value;
-      const temperature = Number(temperatureInput.value) || 0.4;
-      const targetWord = getTargetWord();
-
-      const messages = [
-        { role: 'system', content: systemPrompt.value.trim() },
-        {
-          role: 'system',
-          content: `TARGET_WORD: ${targetWord}
-
-The TARGET_WORD is the single English word the user wants to practice.
-The TARGET_WORD is authoritative.
-
-Important:
-- If the speech-recognition transcript says "this word", "the word", "first word", or "new word", it means TARGET_WORD.
-- If the transcript contains a strange word that sounds similar to TARGET_WORD, assume the user probably meant TARGET_WORD.
-- Do not switch to another vocabulary word unless the user clearly says a different English word.
-- Focus the conversation on TARGET_WORD.`
-        },
-        {
-          role: 'system',
-          content: `Hard rules:
-1. Answer the CURRENT transcript only.
-2. Do not reuse or copy previous answers.
-3. Return one valid JSON object only.
-4. Never output labels like Previous corrected, Previous reply, The target words are, or I hope this helps.
-5. Keep the reply fresh and specific to the current transcript.
-6. If speech recognition seems wrong, use TARGET_WORD as the vocabulary word being practiced.`
-        },
-        {
-          role: 'user',
-          content: `CURRENT transcript only:
-${userSpeechText}
-
-Create a fresh response.
-Use TARGET_WORD as the vocabulary word being practiced.`
-        }
-      ];
-
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (apiKey.trim()) headers.Authorization = `Bearer ${apiKey.trim()}`;
-
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature,
-            max_tokens: 120,
-            stream: false
-          })
-        });
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`HTTP ${res.status}: ${errorText}`);
-        }
-
-        const data = await res.json();
-        const content = data?.choices?.[0]?.message?.content || data?.message?.content || '';
-        const json = extractJsonObject(content);
-
-        let corrected = '';
-        let reply = '';
-        let note = '';
-
-        if (json) {
-          corrected = json.corrected || '';
-          reply = json.reply || '';
-          note = json.note_cn || json.note || '';
-        } else {
-          corrected = userSpeechText;
-          reply = content || 'I understood you. Please try one more sentence.';
-          note = '模型没有返回标准 JSON，已直接显示原始回答。';
-        }
-
-        const correctedView = note ? `${corrected}\n\n说明：${note}` : corrected;
-        setBox(correctedText, correctedView, '没有矫正结果。');
-        setBox(replyText, reply, '没有回答。');
-
-        lastReply = reply;
-        speakAgainBtn.disabled = !reply;
-        turns.push({ raw: userSpeechText, corrected, reply, note, at: new Date().toLocaleTimeString() });
+      if (result) {
+        const feedback =
+`修正后：${result.corrected || ''}
+说明：${result.feedback_cn || ''}
+回复：${result.reply || ''}`;
+        setBox(feedbackText, feedback, '没有返回修正。');
+        setBox(replyText, result.reply || result.speak || '', '没有回答。');
+        const speakText = result.speak || result.reply || result.corrected || '';
+        turns.push({ mode: '造句修正', word: getTargetWord(), user: text, tutor: feedback, at: new Date().toLocaleTimeString() });
         renderHistory();
-        saveSettings();
-
-        if (reply) {
-          speak(reply);
-        }
-        setStatus('', '完成');
-      } catch (e) {
-        console.error(e);
-        setStatus('error', '调用本地 LLM 失败');
-        setBox(correctedText, userSpeechText, '调用失败。');
-        setBox(replyText, '调用本地 LLM 失败：\n' + (e.message || e), '调用失败。');
-      } finally {
-        isProcessing = false;
+        if (speakText) speak(speakText);
       }
+
+      isProcessing = false;
     }
 
     function renderHistory() {
@@ -968,11 +952,9 @@ Use TARGET_WORD as the vocabulary word being practiced.`
         const item = document.createElement('div');
         item.className = 'history-item';
         item.innerHTML = `
-          <div class="hint">#${turns.length - index} · ${escapeHtml(t.at)}</div>
-          <div class="user"><strong>You:</strong> ${escapeHtml(t.raw)}</div>
-          <div class="user"><strong>Corrected:</strong> ${escapeHtml(t.corrected)}</div>
-          <div class="assistant"><strong>Tutor:</strong> ${escapeHtml(t.reply)}</div>
-          ${t.note ? `<div class="hint">${escapeHtml(t.note)}</div>` : ''}
+          <div class="hint">#${turns.length - index} · ${escapeHtml(t.at)} · ${escapeHtml(t.mode)} · word: ${escapeHtml(t.word)}</div>
+          ${t.user ? `<div><strong>You:</strong> ${escapeHtml(t.user)}</div>` : ''}
+          <div><strong>Tutor:</strong><br>${escapeHtml(t.tutor)}</div>
         `;
         historyEl.appendChild(item);
       });
@@ -987,26 +969,39 @@ Use TARGET_WORD as the vocabulary word being practiced.`
         .replaceAll("'", '&#039;');
     }
 
-    async function testLLM() {
-      await askLocalLLM('Can you explain this word?');
-    }
-
+    explainBtn.addEventListener('click', explainWord);
+    practiceBtn.addEventListener('click', startPractice);
     startBtn.addEventListener('click', startListening);
     stopBtn.addEventListener('click', () => stopListening('manual'));
-    speakAgainBtn.addEventListener('click', () => speak(lastReply));
+    speakAgainBtn.addEventListener('click', () => speak(lastSpeakText));
+
     clearBtn.addEventListener('click', () => {
       turns = [];
       renderHistory();
       setBox(rawText, '', '还没有语音输入。');
-      setBox(correctedText, '', '等待本地 LLM 返回。');
       setBox(replyText, '', '回答会显示在这里，并自动朗读出来。');
-      lastReply = '';
-      speakAgainBtn.disabled = true;
+      setBox(feedbackText, '', '你的造句修正会显示在这里。');
       try { synth && synth.cancel(); } catch (e) {}
+      currentMode = 'idle';
+      modePill.textContent = 'Idle';
+      startBtn.disabled = true;
       setStatus('', '已清空');
     });
+
     saveSettingsBtn.addEventListener('click', saveSettings);
-    testLLMBtn.addEventListener('click', testLLM);
+
+    updateWordListBtn.addEventListener('click', () => {
+      refreshWordSelect();
+      saveSettings();
+      setStatus('', `当前练习单词：${getTargetWord() || '未选择'}`);
+    });
+
+    wordSelect.addEventListener('change', () => {
+      selectedTargetWord = wordSelect.value;
+      updateCurrentWordUI();
+      saveSettings();
+      setStatus('', `当前练习单词：${selectedTargetWord}`);
+    });
 
     silenceSeconds.addEventListener('input', () => {
       const seconds = Math.max(2, Number(silenceSeconds.value) || 5);
@@ -1020,17 +1015,13 @@ Use TARGET_WORD as the vocabulary word being practiced.`
     });
 
     window.addEventListener('load', () => {
-      localStorage.removeItem('llmVoiceTutorSettings');
       loadSettings();
       populateVoices();
-      if (synth) {
-        synth.onvoiceschanged = populateVoices;
-      }
-      if (!SpeechRecognition) {
-        setStatus('error', '浏览器不支持语音识别');
-      } else {
-        setStatus('', '就绪');
-      }
+      refreshWordSelect();
+      updateCurrentWordUI();
+      if (synth) synth.onvoiceschanged = populateVoices;
+      if (!SpeechRecognition) setStatus('error', '浏览器不支持语音识别');
+      else setStatus('', `就绪：当前单词 ${getTargetWord() || '未选择'}`);
     });
   </script>
 </body>
