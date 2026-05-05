@@ -834,8 +834,7 @@ Please create a natural conversation using these words gradually.
 
       const recentSummary = turns.slice(-2).map((t, i) => {
         return `Turn ${i + 1}: user said "${t.raw}"; tutor replied "${t.reply}"`;
-      }).join('
-');
+      }).join('');
 
       const messages = [
         { role: 'system', content: systemPrompt.value.trim() },
