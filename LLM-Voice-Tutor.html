@@ -954,6 +954,7 @@ Create a fresh response for this exact transcript.` }
     });
 
     window.addEventListener('load', () => {
+      localStorage.removeItem('llmVoiceTutorSettings');
       loadSettings();
       populateVoices();
       if (synth) {
