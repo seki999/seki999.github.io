@@ -832,14 +832,22 @@ Please create a natural conversation using these words gradually.
       const apiKey = apiKeyInput.value;
       const temperature = Number(temperatureInput.value) || 0.4;
 
+      const recentSummary = turns.slice(-2).map((t, i) => {
+        return `Turn ${i + 1}: user said "${t.raw}"; tutor replied "${t.reply}"`;
+      }).join('
+');
+
       const messages = [
         { role: 'system', content: systemPrompt.value.trim() },
         { role: 'system', content: extraPrompt.value.trim() },
-        ...turns.slice(-6).flatMap(t => ([
-          { role: 'user', content: `Previous user transcript: ${t.raw}` },
-          { role: 'assistant', content: `Previous corrected: ${t.corrected}\nPrevious reply: ${t.reply}` }
-        ])),
-        { role: 'user', content: `Browser speech-recognition transcript:\n${userSpeechText}` }
+        {
+          role: 'system',
+          content: 'Important output rule: Return one valid JSON object only. Do not copy previous messages. Do not output labels like Previous corrected, Previous reply, note_cn outside JSON. Focus on the current user transcript.'
+        },
+        ...(recentSummary ? [{ role: 'system', content: `Brief conversation context for continuity only, not for copying:
+${recentSummary}` }] : []),
+        { role: 'user', content: `Current browser speech-recognition transcript:
+${userSpeechText}` }
       ];
 
       try {
@@ -853,6 +861,7 @@ Please create a natural conversation using these words gradually.
             model,
             messages,
             temperature,
+            max_tokens: 80,
             stream: false
           })
         });
