@@ -5,5 +5,6 @@
   <li><a href="https://seki999.github.io/multilangduo-zh-ja-en.html" target="_blank" rel="noopener noreferrer">多语言双人对话：中/日/英</a></li>
   <li><a href="https://seki999.github.io/readrepeat.html" target="_blank" rel="noopener noreferrer">逐句朗读 + 跟读训练</a></li>
   <li><a href="https://docs.google.com/spreadsheets/d/1aGMOCbhHApPdo-wTyw9SsliGJgv2H4roD54M3UOq21g/edit?usp=sharing" target="_blank" rel="noopener noreferrer">英語学習資料</a></li>
+  <li><a href="https://docs.google.com/spreadsheets/d/12MXwsC-Uswg8oQkeMkv2CAT2Ahra9wUeUoGxfuYULiY/edit?usp=sharing" target="_blank" rel="noopener noreferrer">旧英語学習</a></li>
   <li><a href="https://seki999.github.io/DialogueFlow_GitHub_OnLine" target="_blank" rel="noopener noreferrer">我的学习利器</a></li>
 </ul>
